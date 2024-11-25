@@ -16,7 +16,11 @@ random.seed(4326)
 Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
-sky = Sky(texture="Textures/skybox.jpg")
+
+skybox_image = load_texture("sky_sunset.jpg")
+Sky(texture=skybox_image)
+
+# sky = Sky(texture="Textures/skybox.jpg")
 
 ground = Entity(model='Models/Newterrain.obj', collider='mesh', scale=4, texture='Textures/TerrainTexture.png')
 #murren = Entity(model='Models/skyrealtrustme.obj', collider='mesh', scale=4, texture='Textures/homo.nl.png',texture_scale=(1,1))
@@ -85,32 +89,32 @@ kwit = False
 localtime = 0
 
 
-def skyboxManager():
-    skybox_path = '3D enigne/Textures/skybox.jpg'
-    enhanced_skybox_path = '3D enigne/Textures/enhanced_skybox.jpg'
-    global kwit
-    if kwit:
-        app.closeWindow()
-        quit()
+# def skyboxManager():
+#     skybox_path = '3D enigne/Textures/skybox.jpg'
+#     enhanced_skybox_path = '3D enigne/Textures/enhanced_skybox.jpg'
+#     global kwit
+#     if kwit:
+#         app.closeWindow()
+#         quit()
     
-    global localtime 
-    skybox1 = Image.open(skybox_path)
-    while kwit == False:
-        # Текущее время в 24-секундном цикле
-        localtime = int(time.time() % 24)  # Оставляем только секунды в пределах 24 секунд
-        print(f"\r24-seconden tijd: {localtime:02d}", end="")
-        time.sleep(0.1)  # Обновляем каждые 100 мс для плавности
-        # total_seconds = int(time.time()) % (24 * 60) 
-        # localtime = total_seconds // 60
-        # seconds = total_seconds % 60
-        enchanche_percent = 1 + localtime / 10
-        for localtime in range(1, 24):
-            enhancer = ImageEnhance.Contrast(skybox1)
-            contrast_skybox = enhancer.enhance(enchanche_percent)
-            # co                                                                                                                                                                                                                                                                                                                                                            m,ntrast_skybox.save(enhanced_skybox_path, format='JPEG')
+#     global localtime 
+#     skybox1 = Image.open(skybox_path)
+#     while kwit == False:
+#         # Текущее время в 24-секундном цикле
+#         localtime = int(time.time() % 24)  # Оставляем только секунды в пределах 24 секунд
+#         print(f"\r24-seconden tijd: {localtime:02d}", end="")
+#         time.sleep(0.1)  # Обновляем каждые 100 мс для плавности
+#         # total_seconds = int(time.time()) % (24 * 60) 
+#         # localtime = total_seconds // 60
+#         # seconds = total_seconds % 60
+#         enchanche_percent = 1 + localtime / 10
+#         for localtime in range(1, 24):
+#             enhancer = ImageEnhance.Contrast(skybox1)
+#             contrast_skybox = enhancer.enhance(enchanche_percent)
+#             # co                                                                                                                                                                                                                                                                                                                                                            m,ntrast_skybox.save(enhanced_skybox_path, format='JPEG')
             
-        skybox1_image = load_texture("3D enigne/Textures/enhanced_skybox.jpg")
-        Sky(texture=skybox1_image)
+#         skybox1_image = load_texture("3D enigne/Textures/enhanced_skybox.jpg")
+#         Sky(texture=skybox1_image)
         
     
 def HungerManager():
@@ -197,7 +201,7 @@ def HungerManager():
 
 stop_threads = False
 Thread(target=HungerManager).start()
-Thread(target=skyboxManager).start()
+# Thread(target=skyboxManager).start()
 
 for i in range(2):
     spawnposses = [Vec3(-165.8, -4.33329, 43.9855), Vec3(-108.996, 0.744841, 40.3109), Vec3(-97.5293, -16.0675, 54.1008), Vec3(-54.0972, -7.16099, 41.828), Vec3(-7.40389, 3.42633, 28.4597),
