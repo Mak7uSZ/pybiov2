@@ -28,6 +28,8 @@ player = FirstPersonController()
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 
 # Try to connect to the server
 try:
@@ -36,6 +38,9 @@ try:
 except Exception as e:
     print(f"Connection failed: {e}")
     exit()
+
+response = client_socket.recv(1024)
+data = json.loads(response.decode())
 
 # Function to send position data
 def send_position_data():
