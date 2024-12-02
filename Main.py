@@ -1,5 +1,5 @@
 import random
-
+import socket
 import time
 from PIL import Image, ImageEnhance
 from ursina import *
@@ -10,13 +10,60 @@ from threading import Thread
 import keyboard
 from ursina.texture_importer import load_texture
 from ursina import *
+import threading
+from queue import Queue
+import select
+from ursina import Vec3, Entity, color
+from pathlib import Path
+import socket
+import threading
+import json
+import time
 app = Ursina()
 
-random.seed(4326)
+# Initialize player (FirstPersonController)
+player = FirstPersonController()
+
+# Set up server connection
+server_ip = "127.0.0.1"
+server_port = 12345
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Try to connect to the server
+try:
+    client_socket.connect((server_ip, server_port))
+    print("Connected to server")
+except Exception as e:
+    print(f"Connection failed: {e}")
+    exit()
+
+# Function to send position data
+def send_position_data():
+    position_data = {'x': player.x, 'y': player.y, 'z': player.z}
+    
+    # Convert position data to JSON format
+    data = json.dumps(position_data)
+    
+    # Send position data to the server
+    client_socket.send(data.encode('utf-8'))  # Ensure data is encoded as bytes
+
+# Run the function in a separate thread to send position data continuously
+def networking_thread():
+    while True:
+        send_position_data()
+        time.sleep(0.1)  # Sending position data every 100ms
+
+# Start the networking thread
+Thread(target=networking_thread, daemon=True).start()
+
+
+random.seed(5598838209432810483439819859573091790609162098376087326875287218593720980732109328532575197859732905798327967438960256076943109874198759843)
 Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
-sky = Sky(texture="Textures/skybox.jpg")
+
+# 4096 x 1024 JPG
+# sky = Sky(texture="Textures/skybox.jpg")
 
 ground = Entity(model='Models/Newterrain.obj', collider='mesh', scale=4, texture='Textures/TerrainTexture.png')
 #murren = Entity(model='Models/skyrealtrustme.obj', collider='mesh', scale=4, texture='Textures/homo.nl.png',texture_scale=(1,1))
@@ -41,6 +88,8 @@ text_entity = Text(f"Food:", world_scale=48)
 text_entity.world_position = (-17.5, 9.5)
 text_entity.always_on_top = True
 
+
+
 wp = Panel(
     title='',
     content=(
@@ -59,6 +108,17 @@ watertex.position = window.center
 watertex.scale = (2, 2)
 watertex.color = color.blue
 watertex.scale = (0,0)
+
+sleeptex = Panel(
+    title='',
+    content=(
+        ),
+    popup=False
+    )
+sleeptex.position = window.center
+sleeptex.scale = (2, 2)
+sleeptex.color = color.black
+sleeptex.scale = (0,0)
 
 
 wp.scale = (0.6,0.2)
@@ -83,40 +143,65 @@ shootables_parent = Entity()
 mouse.traverse_target = shootables_parent
 kwit = False
 localtime = 0
+food = 5
 
-
+text_entity2 = Text("sigma", world_position = (-20, -20))
 def skyboxManager():
-    skybox_path = '3D enigne/Textures/skybox.jpg'
-    enhanced_skybox_path = '3D enigne/Textures/enhanced_skybox.jpg'
+    global food
+    #text_entity2.text = Text("g", world_scale=48)
     global kwit
     if kwit:
         app.closeWindow()
         quit()
     
-    global localtime 
-    skybox1 = Image.open(skybox_path)
-    while kwit == False:
-        # Текущее время в 24-секундном цикле
-        localtime = int(time.time() % 24)  # Оставляем только секунды в пределах 24 секунд
-        print(f"\r24-seconden tijd: {localtime:02d}", end="")
-        time.sleep(0.1)  # Обновляем каждые 100 мс для плавности
-        # total_seconds = int(time.time()) % (24 * 60) 
-        # localtime = total_seconds // 60
-        # seconds = total_seconds % 60
-        enchanche_percent = 1 + localtime / 10
-        for localtime in range(1, 24):
-            enhancer = ImageEnhance.Contrast(skybox1)
-            contrast_skybox = enhancer.enhance(enchanche_percent)
-            # co                                                                                                                                                                                                                                                                                                                                                            m,ntrast_skybox.save(enhanced_skybox_path, format='JPEG')
-            
-        skybox1_image = load_texture("3D enigne/Textures/enhanced_skybox.jpg")
-        Sky(texture=skybox1_image)
-        
+    global localtime
+    print("1")
+    skybox_image1 = load_texture("sky_night.jpg")
+    print("1")
+    skybox_image2 = load_texture("sky_morning.jpg")
+    print("1")
+    skybox_image3 = load_texture("Middag.jpg")
+    print("1")
+    skybox_image4 = load_texture("sky_sunset.jpg")
     
+    while kwit == False:
+        
+        time.sleep(1)
+        if localtime > 0 and localtime < 60:
+            Sky(texture=skybox_image1)
+            text_entity2.world_position = (-5, -5)
+            text_entity2.world_scale = (48, 48)
+            text_entity2.text = f"Press F to sleep" 
+        if localtime > 59 and localtime < 120:
+            Sky(texture=skybox_image2)
+        if localtime > 119 and localtime < 180:
+            Sky(texture=skybox_image3)
+        if localtime > 179 and localtime < 240:
+            text_entity2.text = f"Press F to sleep" 
+            text_entity2.world_position = (-5, -5)
+            text_entity2.world_scale = (48, 48)
+            Sky(texture=skybox_image4)
+        if localtime > 239:
+            localtime = 0
+        if localtime > 180 or localtime < 60:
+            if held_keys["f"] and player.intersects(ground).hit == True and player.intersects(water).hit == False:
+                sleeptex.scale = (2,2)
+                time.sleep(2)
+                sleeptex.scale = (0,0)
+                text_entity2.world_scale = (0,0)
+                localtime = 70
+                food -= 2
+            
+        localtime += 1
+        
+
+        
+          
 def HungerManager():
+    global localtime
     global kwit
     global katerpilaarlist
-    food = 3
+    global food
     foodcounter = 0
     katerpilaarcounter = 0
     while True:
@@ -126,7 +211,12 @@ def HungerManager():
             r = random.randint(0, len(katerpilaarlist) - 1)
             destroy(katerpilaarlist[r])
             katerpilaarlist.pop(r)
-        if katerpilaarcounter == 60:
+        
+        # if held_keys["f"] and player.intersects(ground).hit == True and player.intersects(water).hit == False:
+        #     food -= 2
+        #     time.sleep(5)
+            
+        if katerpilaarcounter == 60 and localtime > 59 and localtime < 180:
             
             enemys = ["Models/mug.obj", "Models/vlinder.obj", "Models/zijdeplant.obj", "Models/kever.obj", "Models/lag vrije katerpilaar.obj"]
 
@@ -139,6 +229,15 @@ def HungerManager():
                            Vec3(96.6821, -2.47574, -125.344), Vec3(89.6741, -10.3001, -88.6823),
                            Vec3(88.3617, -15.8764, -33.4703), Vec3(113.022, -6.81619, 41.7727),
                            Vec3(120.526, -34.995, 75.1187), Vec3(175.884, -18.2383, 71.6165)]
+            
+            randomnumber = random.randint(0, 16)
+            sigma_vector = spawnposses[randomnumber]
+            randomnubmer2 = random.randint(0, 5)
+            sigma_enemy = enemys[randomnubmer2]
+            enemy = Entity(model=sigma_enemy, origin_y=-.5, scale=1, texture='Textures/kakkerpilaar.png',
+                           texture_scale=(1, 2), collider="box")
+            enemy.world_position = sigma_vector
+            katerpilaarlist.append(enemy)
             
             randomnumber = random.randint(0, 16)
             sigma_vector = spawnposses[randomnumber]
@@ -222,24 +321,21 @@ for i in range(2):
     katerpilaarlist.append(enemy)
     print(f"katterpillar {i}")
 
-
+currenseed = 1
 
 def update():
+    global currenseed
+    currenseed += 1
+    random.seed(currenseed)
     if kwit:
         quit()
     touchingland = False
 
     if player.intersects(ground).hit:
-        touchingland = True
-        # watertex.scale = (0,0)
-    # elif player.intersects(water).hit:
-        
-        
+        touchingland = True     
     else:
         touchingland = False
-        
-
-    print(touchingland, player.intersects(water).hit)
+    
     if player.intersects(water).hit == True:
         watertex.scale = (2, 2)
     else:
