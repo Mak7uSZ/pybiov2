@@ -38,9 +38,10 @@ except Exception as e:
     exit()
 
 # Receive the client ID from the server
+# Receive the client ID from the server
 data = client_socket.recv(1024)  # Receive initial client ID
-your_client_id = data.decode('utf-8')
-print(f"Received client ID: {your_client_id}")
+your_client_id = data.decode('utf-8').strip().strip('"')
+print(f"Received client ID: {repr(your_client_id)}")  # Выводим для проверки
 
 def filter_own_position(client_id, positions_data):
     filtered = {key: value for key, value in positions_data.items() if key != client_id}
@@ -57,9 +58,12 @@ def receive_positions():
                 print(f"Received positions data: {positions_data}")
 
                 # Filter out own position using filter() function
+                print(f"Your client ID: {repr(your_client_id)}")
+                print(f"Available keys: {repr(positions_data.keys())}")
+
                 filtered_positions = filter_own_position(your_client_id, positions_data)
 
-                print(filtered_positions)
+                print(f"Filtered positions: {filtered_positions}")
                 
                 # Handle the filtered data (e.g., update game state, display positions)
                 for client_id, position in filtered_positions.items():
@@ -70,6 +74,7 @@ def receive_positions():
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
+
 
 
 # Function to send position data
