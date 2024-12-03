@@ -24,12 +24,10 @@ app = Ursina()
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
 
-# Set up server connection
+
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
 
 # Try to connect to the server
 try:
@@ -39,28 +37,63 @@ except Exception as e:
     print(f"Connection failed: {e}")
     exit()
 
-response = client_socket.recv(1024)
-data = json.loads(response.decode())
+# Receive the client ID from the server
+data = client_socket.recv(1024)  # Receive initial client ID
+your_client_id = data.decode('utf-8')
+print(f"Received client ID: {your_client_id}")
+
+def filter_own_position(client_id, positions_data):
+    filtered = {key: value for key, value in positions_data.items() if key != client_id}
+    return filtered
+
+# Function to continuously receive position data from the server
+def receive_positions():
+    while True:
+        try:
+            # Receive position data from the server
+            data = client_socket.recv(4096)  # Buffer size of 4096 bytes
+            if data:
+                positions_data = json.loads(data.decode('utf-8'))  # Convert from JSON to dictionary
+                print(f"Received positions data: {positions_data}")
+
+                # Filter out own position using filter() function
+                filtered_positions = filter_own_position(your_client_id, positions_data)
+
+                print(filtered_positions)
+                
+                # Handle the filtered data (e.g., update game state, display positions)
+                for client_id, position in filtered_positions.items():
+                    print(f"Client ID: {client_id}, Position: {position}")
+            else:
+                print("No data received from server.")
+                break
+        except Exception as e:
+            print(f"Error receiving data: {e}")
+            break
+
 
 # Function to send position data
 def send_position_data():
-    position_data = {'x': player.x, 'y': player.y, 'z': player.z}
-    
-    # Convert position data to JSON format
-    data = json.dumps(position_data)
-    
-    # Send position data to the server
-    client_socket.send(data.encode('utf-8'))  # Ensure data is encoded as bytes
-
-# Run the function in a separate thread to send position data continuously
-def networking_thread():
     while True:
-        send_position_data()
+        # Prepare position data
+        position_data = {'x': player.x, 'y': player.y, 'z': player.z}
+        # Convert position data to JSON format
+        data = json.dumps(position_data)
+        # Send position data to the server
+        try:
+            client_socket.send(data.encode('utf-8'))
+            print(f"Sent position data: {position_data}")
+        except Exception as e:
+            print(f"Error sending data to server: {e}")
         time.sleep(0.1)  # Sending position data every 100ms
 
-# Start the networking thread
-Thread(target=networking_thread, daemon=True).start()
+# Start the receiving data thread
+Thread(target=receive_positions, daemon=True).start()
 
+# Start the networking thread to send position data
+Thread(target=send_position_data, daemon=True).start()
+
+# Run the Ursina app
 
 random.seed(5598838209432810483439819859573091790609162098376087326875287218593720980732109328532575197859732905798327967438960256076943109874198759843)
 Entity.default_shader = unlit_shader
