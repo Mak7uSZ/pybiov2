@@ -1,19 +1,12 @@
-import socket
+def filter_own_position(client_id, positions_data):
+    filtered = {key: value for key, value in positions_data.items() if key != client_id}
+    return filtered
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('192.168.102.39', 12345))  # Replace with your server's local IP
+positions_data = {
+    'd3bfad6d-c2da-456a-89f5-608d927312d9': {'x': 0.0, 'y': 6.814326763153076, 'z': 0.0}
+}
+your_client_id = 'd3bfad6d-c2da-456a-89f5-608d927312d9'
 
-try:
-    message = input("Enter a message (or 'exit' to quit): ")
-    while message.lower() != 'exit':
-        client.send(message.encode())  # Send message to server
+filtered_positions = filter_own_position(your_client_id, positions_data)
 
-        response = client.recv(1024)
-        print(f"Server response: {response.decode()}")
-
-        message = input("Enter a message (or 'exit' to quit): ")
-
-except Exception as e:
-    print(f"An error occurred: {e}")
-finally:
-    client.close()  # Ensure the connection is closed properly
+print(filtered_positions)
