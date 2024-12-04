@@ -24,7 +24,6 @@ app = Ursina()
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
 
-
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,7 +47,9 @@ def filter_own_position(client_id, positions_data):
     return filtered
 
 # Function to continuously receive position data from the server
+filtered_positions = {}
 def receive_positions():
+    global filtered_positions
     while True:
         try:
             # Receive position data from the server
@@ -75,7 +76,61 @@ def receive_positions():
             print(f"Error receiving data: {e}")
             break
 
+# Assuming `your_client_id` is the ID of your own client, which you already have
 
+# Dictionary to store existing player models (if not already created
+
+# Update loop to check filtered_positions and create model
+
+# Store created player models
+player_entities = {}  # Ключ: client_id, Значение: Entity
+
+
+def create_player_model(client_id):
+    """Creates or updates a player model based on the given coordinates."""
+    position = filtered_positions[client_id]
+
+    # If the entity already exists, remove it
+    if client_id in player_entities:
+        print(f"Removing old entity for client {client_id}")
+        player_entities[client_id].disable()
+        del player_entities[client_id]
+
+    # Create a new entity
+    print(f"Creating a new entity for client {client_id} at coordinates {position}")
+    entity = Entity(
+        model='cube',
+        color=color.random_color(),
+        scale=2,
+        position=(position['x'], position['y'], position['z']),
+    )
+    player_entities[client_id] = entity  # Save the entity in the dictionary
+
+
+def update_player_positions():
+    """Updates player entities based on data in filtered_positions."""
+    while True:
+        for client_id in filtered_positions.keys():
+            create_player_model(client_id)
+
+        if not filtered_positions:
+            print("No new entities created and positions not updated.")  # Message if dictionary is empty
+        time.sleep(0.1)  # Minimal delay
+
+
+# Start a thread to update positions
+
+
+# Запускаем поток для обновления позиций
+
+def generate_models_from_positions():
+    """Создаёт новые модели для всех клиентов из filtered_positions."""
+    while True:
+        for client_id, position in filtered_positions.items():
+            if client_id not in known_clients:
+                create_player_model(position)  # Создаём модель
+                known_clients.add(client_id)  # Помечаем клиента как обработанного
+        time.sleep(0.1)  # Минимальная задержка, чтобы не загружать процессор
 
 # Function to send position data
 def send_position_data():
@@ -92,6 +147,8 @@ def send_position_data():
             print(f"Error sending data to server: {e}")
         time.sleep(0.1)  # Sending position data every 100ms
 
+
+Thread(target=update_player_positions, daemon=True).start()
 # Start the receiving data thread
 Thread(target=receive_positions, daemon=True).start()
 
@@ -117,6 +174,21 @@ human_cacher.position_y = 100
 
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, color="27DCA3", origin_y=-.9, speed=20, collider='box')
+
+# Assuming player models are already created for each client and stored in a dictionary
+# The player_models dictionary holds the model reference using the client_id as the key
+# We only need to update their positions
+
+# Dictionary to store existing player models (if not already created)
+# Assuming `your_client_id` is the ID of your own client, which you already have
+
+# Dictionary to store existing player models (if not already created)
+# Assuming `your_client_id` is the ID of your own client, which you already have
+
+# Dictionary to store existing player models (if not already created)
+
+
+
 
 player._collider = BoxCollider(player, (0,0,0), (0.5, 1, 0.5))
 player.position = Vec3(0, 60, 0)
