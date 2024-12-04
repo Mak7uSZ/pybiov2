@@ -48,6 +48,7 @@ def filter_own_position(client_id, positions_data):
 
 # Function to continuously receive position data from the server
 filtered_positions = {}
+
 def receive_positions():
     global filtered_positions
     while True:
@@ -55,26 +56,39 @@ def receive_positions():
             # Receive position data from the server
             data = client_socket.recv(4096)  # Buffer size of 4096 bytes
             if data:
-                positions_data = json.loads(data.decode('utf-8'))  # Convert from JSON to dictionary
-                print(f"Received positions data: {positions_data}")
+                try:
+                    # Try decoding and parsing the data
+                    positions_data = json.loads(data.decode('utf-8'))  # Convert from JSON to dictionary
+                    print(f"Received positions data: {positions_data}")
 
-                # Filter out own position using filter() function
-                print(f"Your client ID: {repr(your_client_id)}")
-                print(f"Available keys: {repr(positions_data.keys())}")
+                    # Filter out own position using filter() function
+                    print(f"Your client ID: {repr(your_client_id)}")
+                    print(f"Available keys: {repr(positions_data.keys())}")
 
-                filtered_positions = filter_own_position(your_client_id, positions_data)
+                    filtered_positions = filter_own_position(your_client_id, positions_data)
 
-                print(f"Filtered positions: {filtered_positions}")
-                
-                # Handle the filtered data (e.g., update game state, display positions)
-                for client_id, position in filtered_positions.items():
-                    print(f"Client ID: {client_id}, Position: {position}")
+                    print(f"Filtered positions: {filtered_positions}")
+
+                    # Handle the filtered data (e.g., update game state, display positions)
+                    for client_id, position in filtered_positions.items():
+                        print(f"Client ID: {client_id}, Position: {position}")
+                except json.JSONDecodeError as e:
+                    # Handle JSON decode error and retry immediately
+                    print(f"Error decoding JSON: {e}. Retrying...")
+                except KeyError as e:
+                    # Handle missing keys in the data and retry immediately
+                    print(f"Error: Missing key {e} in the received data. Retrying...")
+                except Exception as e:
+                    # Handle any other unexpected exceptions and retry immediately
+                    print(f"Unexpected error: {e}. Retrying...")
             else:
-                print("No data received from server.")
-                break
+                # If no data is received, retry immediately
+                print("No data received from server. Retrying...")
+
         except Exception as e:
-            print(f"Error receiving data: {e}")
-            break
+            # Catch errors when receiving data and retry immediately
+            print(f"Error receiving data: {e}. Retrying...")
+
 
 # Assuming `your_client_id` is the ID of your own client, which you already have
 
