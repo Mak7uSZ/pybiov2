@@ -19,154 +19,127 @@ import socket
 import threading
 import json
 import time
+from ursina import Vec3
 app = Ursina()
 
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
 
+import socket
+import json
+import time
+from threading import Thread
+from ursina import *
+
+# Настройки подключения
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Try to connect to the server
+# Подключаемся к серверу
 try:
     client_socket.connect((server_ip, server_port))
-    print("Connected to server")
+    print("[INFO] Connected to server")
 except Exception as e:
-    print(f"Connection failed: {e}")
+    print(f"[ERROR] Connection failed: {e}")
     exit()
 
-# Receive the client ID from the server
-# Receive the client ID from the server
-data = client_socket.recv(1024)  # Receive initial client ID
+# Получаем ID клиента
+data = client_socket.recv(1024)  # Получаем ID клиента
 your_client_id = data.decode('utf-8').strip().strip('"')
-print(f"Received client ID: {repr(your_client_id)}")  # Выводим для проверки
+print(f"[INFO] Received client ID: {repr(your_client_id)}")
 
+# Фильтрация собственной позиции
 def filter_own_position(client_id, positions_data):
+    print(f"[DEBUG] Filtering positions. Excluding client ID: {client_id}")
     filtered = {key: value for key, value in positions_data.items() if key != client_id}
+    print(f"[DEBUG] Filtered positions: {filtered}")
     return filtered
 
-# Function to continuously receive position data from the server
+# Функция для получения данных о позициях
 filtered_positions = {}
 
 def receive_positions():
     global filtered_positions
     while True:
         try:
-            # Receive position data from the server
-            data = client_socket.recv(4096)  # Buffer size of 4096 bytes
+            data = client_socket.recv(4096)  # Размер буфера 4096 байт
             if data:
                 try:
-                    # Try decoding and parsing the data
-                    positions_data = json.loads(data.decode('utf-8'))  # Convert from JSON to dictionary
-                    print(f"Received positions data: {positions_data}")
+                    positions_data = json.loads(data.decode('utf-8'))  # Преобразуем из JSON
+                    print(f"[DEBUG] Received positions data: {positions_data}")
 
-                    # Filter out own position using filter() function
-                    print(f"Your client ID: {repr(your_client_id)}")
-                    print(f"Available keys: {repr(positions_data.keys())}")
-
-                    filtered_positions = filter_own_position(your_client_id, positions_data)
-
-                    print(f"Filtered positions: {filtered_positions}")
-
-                    # Handle the filtered data (e.g., update game state, display positions)
-                    for client_id, position in filtered_positions.items():
-                        print(f"Client ID: {client_id}, Position: {position}")
+                    # Проверка, что данные приходят в правильном формате
+                    if isinstance(positions_data, dict) and all(isinstance(key, str) and isinstance(value, dict) for key, value in positions_data.items()):
+                        # Фильтруем данные
+                        filtered_positions = filter_own_position(your_client_id, positions_data)
+                        print(f"[DEBUG] Filtered positions: {filtered_positions}")
+                    else:
+                        print("[WARNING] Data is not in the expected format.")
                 except json.JSONDecodeError as e:
-                    # Handle JSON decode error and retry immediately
-                    print(f"Error decoding JSON: {e}. Retrying...")
-                except KeyError as e:
-                    # Handle missing keys in the data and retry immediately
-                    print(f"Error: Missing key {e} in the received data. Retrying...")
-                except Exception as e:
-                    # Handle any other unexpected exceptions and retry immediately
-                    print(f"Unexpected error: {e}. Retrying...")
+                    print(f"[ERROR] Error decoding JSON: {e}")
             else:
-                # If no data is received, retry immediately
-                print("No data received from server. Retrying...")
-
+                print("[WARNING] No data received. Retrying...")
         except Exception as e:
-            # Catch errors when receiving data and retry immediately
-            print(f"Error receiving data: {e}. Retrying...")
+            print(f"[ERROR] Error receiving data: {e}")
 
+        time.sleep(0.1)  # Задержка перед следующим циклом
 
-# Assuming `your_client_id` is the ID of your own client, which you already have
+# Игровая логика: обновление позиций
+from ursina import Vec3
 
-# Dictionary to store existing player models (if not already created
-
-# Update loop to check filtered_positions and create model
-
-# Store created player models
-player_entities = {}  # Ключ: client_id, Значение: Entity
-
-
-def create_player_model(client_id):
-    """Creates or updates a player model based on the given coordinates."""
-    position = filtered_positions[client_id]
-
-    # If the entity already exists, remove it
-    if client_id in player_entities:
-        print(f"Removing old entity for client {client_id}")
-        player_entities[client_id].disable()
-        del player_entities[client_id]
-
-    # Create a new entity
-    print(f"Creating a new entity for client {client_id} at coordinates {position}")
-    entity = Entity(
-        model='cube',
-        color=color.random_color(),
-        scale=2,
-        position=(position['x'], position['y'], position['z']),
-    )
-    player_entities[client_id] = entity  # Save the entity in the dictionary
-
+players = {}
 
 def update_player_positions():
-    """Updates player entities based on data in filtered_positions."""
+    global filtered_positions, players
     while True:
-        for client_id in filtered_positions.keys():
-            create_player_model(client_id)
+        print("[DEBUG] Checking filtered_positions...")  # Это поможет понять, что цикл выполняется
+        if filtered_positions:  # Проверяем, есть ли данные
+            print("[DEBUG] Data found in filtered_positions.")  # Печатаем, если данные есть
+            for client_id, position in filtered_positions.items():
+                if client_id not in players:
+                    # Создаём Entity для новых клиентов, используя Vec3 для позиции
+                    players[client_id] = Entity(
+                        model='cube',
+                        color=color.random_color(),
+                        scale=1,
+                        position=Vec3(position['x'], position['y'], position['z'])  # Исправляем здесь
+                    )
+                    print(f"[INFO] Created Entity for client {client_id} at position {position}")
+                else:
+                    # Телепортируем клиента на новую позицию, если она изменилась
+                    current_position = players[client_id].position
+                    new_position = Vec3(position['x'], position['y'], position['z'])
 
-        if not filtered_positions:
-            print("No new entities created and positions not updated.")  # Message if dictionary is empty
-        time.sleep(0.1)  # Minimal delay
+                    if current_position != new_position:  # Если позиция изменилась
+                        print(f"[INFO] Teleporting client {client_id} to position {position}")
+                        players[client_id].position = new_position
+                    else:
+                        print(f"[INFO] Entity for client {client_id} already at the correct position.")
+        else:
+            print("[DEBUG] filtered_positions is empty, waiting for new data...")
+
+        time.sleep(0.1)  # Задержка перед следующим обновлением
 
 
-# Start a thread to update positions
 
-
-# Запускаем поток для обновления позиций
-
-def generate_models_from_positions():
-    """Создаёт новые модели для всех клиентов из filtered_positions."""
-    while True:
-        for client_id, position in filtered_positions.items():
-            if client_id not in known_clients:
-                create_player_model(position)  # Создаём модель
-                known_clients.add(client_id)  # Помечаем клиента как обработанного
-        time.sleep(0.1)  # Минимальная задержка, чтобы не загружать процессор
-
-# Function to send position data
+# Функция для отправки данных о позиции
 def send_position_data():
     while True:
-        # Prepare position data
-        position_data = {'x': player.x, 'y': player.y, 'z': player.z}
-        # Convert position data to JSON format
-        data = json.dumps(position_data)
-        # Send position data to the server
+        # Предположим, что player - это объект, который содержит координаты
+        player_position = {'x': player.x, 'y': player.y, 'z': player.z}
+        data = json.dumps(player_position)  # Преобразуем в JSON
         try:
-            client_socket.send(data.encode('utf-8'))
-            print(f"Sent position data: {position_data}")
+            client_socket.send(data.encode('utf-8'))  # Отправляем данные на сервер
+            print(f"[INFO] Sent position data: {player_position}")
         except Exception as e:
-            print(f"Error sending data to server: {e}")
-        time.sleep(0.1)  # Sending position data every 100ms
+            print(f"[ERROR] Error sending data to server: {e}")
+        
+        time.sleep(0.1)  # Отправляем данные каждые 100ms
 
-
-Thread(target=update_player_positions, daemon=True).start()
-# Start the receiving data thread
+# Запускаем потоки
 Thread(target=receive_positions, daemon=True).start()
-
-# Start the networking thread to send position data
+Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
 
 # Run the Ursina app
