@@ -100,9 +100,9 @@ def update_player_positions():
                 if client_id not in players:
                     # Создаём Entity для новых клиентов, используя Vec3 для позиции
                     players[client_id] = Entity(
-                        model='cube',
-                        color=color.random_color(),
-                        scale=1,
+                        model='Models/Player.obj',  # Путь к модели
+                        scale=(1, 1, 1),  # Масштаб модели
+                        color=color.random_color(), 
                         position=Vec3(position['x'], position['y'], position['z'])  # Исправляем здесь
                     )
                     print(f"[INFO] Created Entity for client {client_id} at position {position}")
