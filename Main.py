@@ -20,6 +20,7 @@ import threading
 import json
 import time
 from ursina import Vec3
+import keyboard
 app = Ursina()
 
 # Initialize player (FirstPersonController)
@@ -31,12 +32,12 @@ import time
 from threading import Thread
 from ursina import *
 
-# Настройки подключения
-server_ip = "127.0.0.1"
-server_port = 12345
+# Connection settings
+server_ip = "want-sigma.gl.at.ply.gg"
+server_port = 51931
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Подключаемся к серверу
+# Joining to the server
 try:
     client_socket.connect((server_ip, server_port))
     print("[INFO] Connected to server")
@@ -44,34 +45,34 @@ except Exception as e:
     print(f"[ERROR] Connection failed: {e}")
     exit()
 
-# Получаем ID клиента
-data = client_socket.recv(1024)  # Получаем ID клиента
+# getting client_id
+data = client_socket.recv(1024)  # receiving client id
 your_client_id = data.decode('utf-8').strip().strip('"')
 print(f"[INFO] Received client ID: {repr(your_client_id)}")
 
-# Фильтрация собственной позиции
+# filtration of your own positions
 def filter_own_position(client_id, positions_data):
     print(f"[DEBUG] Filtering positions. Excluding client ID: {client_id}")
     filtered = {key: value for key, value in positions_data.items() if key != client_id}
     print(f"[DEBUG] Filtered positions: {filtered}")
     return filtered
 
-# Функция для получения данных о позициях
+# function to receive data of positions
 filtered_positions = {}
 
 def receive_positions():
     global filtered_positions
     while True:
         try:
-            data = client_socket.recv(4096)  # Размер буфера 4096 байт
+            data = client_socket.recv(4096)  ##4096 data buffer
             if data:
                 try:
-                    positions_data = json.loads(data.decode('utf-8'))  # Преобразуем из JSON
+                    positions_data = json.loads(data.decode('utf-8'))  # changeing from json
                     print(f"[DEBUG] Received positions data: {positions_data}")
 
-                    # Проверка, что данные приходят в правильном формате
+                    # checnking if data comes in right fromat
                     if isinstance(positions_data, dict) and all(isinstance(key, str) and isinstance(value, dict) for key, value in positions_data.items()):
-                        # Фильтруем данные
+                        # data filter
                         filtered_positions = filter_own_position(your_client_id, positions_data)
                         print(f"[DEBUG] Filtered positions: {filtered_positions}")
                     else:
@@ -83,9 +84,9 @@ def receive_positions():
         except Exception as e:
             print(f"[ERROR] Error receiving data: {e}")
 
-        time.sleep(0.1)  # Задержка перед следующим циклом
+        time.sleep(0.1)  # vertgraging
 
-# Игровая логика: обновление позиций
+# game logic: updating player positions
 from ursina import Vec3
 
 players = {}
@@ -93,25 +94,25 @@ players = {}
 def update_player_positions():
     global filtered_positions, players
     while True:
-        print("[DEBUG] Checking filtered_positions...")  # Это поможет понять, что цикл выполняется
-        if filtered_positions:  # Проверяем, есть ли данные
-            print("[DEBUG] Data found in filtered_positions.")  # Печатаем, если данные есть
+        print("[DEBUG] Checking filtered_positions...")  # this lets you know the the loop is working
+        if filtered_positions:  # checking if we have data
+            print("[DEBUG] Data found in filtered_positions.")  #printing if we do
             for client_id, position in filtered_positions.items():
-                if client_id not in players:
-                    # Создаём Entity для новых клиентов, используя Vec3 для позиции
+                if client_id in players:
+                    # creating entity for new clients using vec3
                     players[client_id] = Entity(
                         model='Models/Player.obj',  # Путь к модели
                         scale=(1, 1, 1),  # Масштаб модели
                         color=color.random_color(), 
-                        position=Vec3(position['x'], position['y'], position['z'])  # Исправляем здесь
+                        position=Vec3(position['x'], position['y'], position['z'])  # changing de position
                     )
                     print(f"[INFO] Created Entity for client {client_id} at position {position}")
                 else:
-                    # Телепортируем клиента на новую позицию, если она изменилась
+                    #teleporting de entity on new position if it changed
                     current_position = players[client_id].position
                     new_position = Vec3(position['x'], position['y'], position['z'])
 
-                    if current_position != new_position:  # Если позиция изменилась
+                    if current_position != new_position:  # if position changed
                         print(f"[INFO] Teleporting client {client_id} to position {position}")
                         players[client_id].position = new_position
                     else:
@@ -119,25 +120,25 @@ def update_player_positions():
         else:
             print("[DEBUG] filtered_positions is empty, waiting for new data...")
 
-        time.sleep(0.1)  # Задержка перед следующим обновлением
+        time.sleep(0.1)  #vertraging
 
 
 
-# Функция для отправки данных о позиции
+# function to send data
 def send_position_data():
     while True:
-        # Предположим, что player - это объект, который содержит координаты
+        # lets think, that player - is an object which sends data
         player_position = {'x': player.x, 'y': player.y, 'z': player.z}
-        data = json.dumps(player_position)  # Преобразуем в JSON
+        data = json.dumps(player_position)  # converting to json
         try:
-            client_socket.send(data.encode('utf-8'))  # Отправляем данные на сервер
+            client_socket.send(data.encode('utf-8'))  # sending to the server
             print(f"[INFO] Sent position data: {player_position}")
         except Exception as e:
             print(f"[ERROR] Error sending data to server: {e}")
         
-        time.sleep(0.1)  # Отправляем данные каждые 100ms
+        time.sleep(0.1)  # sending data every 100ms
 
-# Запускаем потоки
+#starting threads
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
