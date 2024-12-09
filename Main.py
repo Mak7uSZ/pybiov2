@@ -20,11 +20,13 @@ import threading
 import json
 import time
 from ursina import Vec3
+import keyboard
 app = Ursina()
 
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
 
+# Настройки подключения
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -98,7 +100,9 @@ def update_player_positions():
                 model.visible = False
                 print(f"[DEBUG] Returned model for client {client_id} to initial position.")
 
-        time.sleep(0.1)
+        time.sleep(0.1)  # Задержка перед следующим обновлением
+
+
 
 # Send player position to the server
 def send_position_data():
