@@ -20,135 +20,113 @@ import threading
 import json
 import time
 from ursina import Vec3
+import keyboard
 app = Ursina()
 
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
 
-import socket
-import json
-import time
-from threading import Thread
-from ursina import *
-
 # Настройки подключения
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((server_ip, server_port))
+print("[INFO] Connected to server")
 
-# Подключаемся к серверу
-try:
-    client_socket.connect((server_ip, server_port))
-    print("[INFO] Connected to server")
-except Exception as e:
-    print(f"[ERROR] Connection failed: {e}")
-    exit()
+# Receive client ID
+data = client_socket.recv(1024)
+your_client_id = data.decode('utf-8').strip()
+print(f"[INFO] Received client ID: {your_client_id}")
 
-# Получаем ID клиента
-data = client_socket.recv(1024)  # Получаем ID клиента
-your_client_id = data.decode('utf-8').strip().strip('"')
-print(f"[INFO] Received client ID: {repr(your_client_id)}")
+# Initialize Ursina
+# Predefined models for other players
+max_players = 10
+initial_positions = [Vec3(0, 0, 0) for _ in range(max_players)]
+players = {str(i): Entity(
+    model='Models/Player.obj',
+    scale=(1, 1, 1),
+    position=initial_positions[i],
+    color=color.random_color(),
+    visible=False
+) for i in range(max_players)}
+assigned_clients = {}
 
-# Фильтрация собственной позиции
+print("[INFO] Predefined player models created.")
+
+# Filter out own position from received data
 def filter_own_position(client_id, positions_data):
-    print(f"[DEBUG] Filtering positions. Excluding client ID: {client_id}")
-    filtered = {key: value for key, value in positions_data.items() if key != client_id}
-    print(f"[DEBUG] Filtered positions: {filtered}")
-    return filtered
+    return {key: value for key, value in positions_data.items() if key != client_id}
 
-# Функция для получения данных о позициях
+# Receive positions from server
 filtered_positions = {}
-
 def receive_positions():
     global filtered_positions
     while True:
         try:
-            data = client_socket.recv(4096)  # Размер буфера 4096 байт
+            data = client_socket.recv(4096)
             if data:
-                try:
-                    positions_data = json.loads(data.decode('utf-8'))  # Преобразуем из JSON
-                    print(f"[DEBUG] Received positions data: {positions_data}")
-
-                    # Проверка, что данные приходят в правильном формате
-                    if isinstance(positions_data, dict) and all(isinstance(key, str) and isinstance(value, dict) for key, value in positions_data.items()):
-                        # Фильтруем данные
-                        filtered_positions = filter_own_position(your_client_id, positions_data)
-                        print(f"[DEBUG] Filtered positions: {filtered_positions}")
-                    else:
-                        print("[WARNING] Data is not in the expected format.")
-                except json.JSONDecodeError as e:
-                    print(f"[ERROR] Error decoding JSON: {e}")
-            else:
-                print("[WARNING] No data received. Retrying...")
+                positions_data = json.loads(data.decode('utf-8'))
+                filtered_positions = filter_own_position(your_client_id, positions_data)
+                print(f"[DEBUG] Filtered positions: {filtered_positions}")
         except Exception as e:
             print(f"[ERROR] Error receiving data: {e}")
 
-        time.sleep(0.1)  # Задержка перед следующим циклом
-
-# Игровая логика: обновление позиций
-from ursina import Vec3
-
-players = {}
-
+# Update player positions
 def update_player_positions():
-    global filtered_positions, players
+    global filtered_positions, players, assigned_clients
     while True:
-        print("[DEBUG] Checking filtered_positions...")  # Это поможет понять, что цикл выполняется
-        if filtered_positions:  # Проверяем, есть ли данные
-            print("[DEBUG] Data found in filtered_positions.")  # Печатаем, если данные есть
-            for client_id, position in filtered_positions.items():
-                if client_id not in players:
-                    # Создаём Entity для новых клиентов, используя Vec3 для позиции
-                    players[client_id] = Entity(
-                        model='Models/Player.obj',  # Путь к модели
-                        scale=(1, 1, 1),  # Масштаб модели
-                        color=color.random_color(), 
-                        position=Vec3(position['x'], position['y'], position['z'])  # Исправляем здесь
-                    )
-                    print(f"[INFO] Created Entity for client {client_id} at position {position}")
+        # Assign or update models for connected clients
+        for client_id, position in filtered_positions.items():
+            if client_id not in assigned_clients:
+                # Assign an available model
+                available_model = next((p for p_id, p in players.items() if p_id.isdigit() and not p.visible), None)
+                if available_model:
+                    available_model.visible = True
+                    available_model.position = Vec3(position['x'], position['y'], position['z'])
+                    assigned_clients[client_id] = available_model
+                    print(f"[DEBUG] Assigned model to client {client_id}")
                 else:
-                    # Телепортируем клиента на новую позицию, если она изменилась
-                    current_position = players[client_id].position
-                    new_position = Vec3(position['x'], position['y'], position['z'])
+                    print(f"[ERROR] No available model for client {client_id}")
+            else:
+                # Update the assigned model's position
+                assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
+                print(f"[DEBUG] Updated position for client {client_id} to {position}")
 
-                    if current_position != new_position:  # Если позиция изменилась
-                        print(f"[INFO] Teleporting client {client_id} to position {position}")
-                        players[client_id].position = new_position
-                    else:
-                        print(f"[INFO] Entity for client {client_id} already at the correct position.")
-        else:
-            print("[DEBUG] filtered_positions is empty, waiting for new data...")
+        # Return unassigned models to their initial positions
+        for client_id in list(assigned_clients.keys()):
+            if client_id not in filtered_positions:
+                model = assigned_clients.pop(client_id)
+                model.position = Vec3(0, 0, 0)
+                model.visible = False
+                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
 
         time.sleep(0.1)  # Задержка перед следующим обновлением
 
 
 
-# Функция для отправки данных о позиции
+# Send player position to the server
 def send_position_data():
     while True:
-        # Предположим, что player - это объект, который содержит координаты
-        player_position = {'x': player.x, 'y': player.y, 'z': player.z}
-        data = json.dumps(player_position)  # Преобразуем в JSON
         try:
-            client_socket.send(data.encode('utf-8'))  # Отправляем данные на сервер
+            player_position = {'x': player.x, 'y': player.y, 'z': player.z}
+            client_socket.send(json.dumps(player_position).encode('utf-8'))
             print(f"[INFO] Sent position data: {player_position}")
         except Exception as e:
-            print(f"[ERROR] Error sending data to server: {e}")
-        
-        time.sleep(0.1)  # Отправляем данные каждые 100ms
+            print(f"[ERROR] Error sending position data: {e}")
+        time.sleep(0.1)
 
-# Запускаем потоки
+# Start threads
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
 
-# Run the Ursina app
 
 random.seed(5598838209432810483439819859573091790609162098376087326875287218593720980732109328532575197859732905798327967438960256076943109874198759843)
 Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
 
+skybox = Sky()
 # 4096 x 1024 JPG
 # sky = Sky(texture="Textures/skybox.jpg")
 
@@ -270,19 +248,19 @@ def skyboxManager():
         
         time.sleep(1)
         if localtime > 0 and localtime < 60:
-            Sky(texture=skybox_image1)
+            skybox.texture = skybox_image1
             text_entity2.world_position = (-5, -5)
             text_entity2.world_scale = (48, 48)
             text_entity2.text = f"Press F to sleep" 
         if localtime > 59 and localtime < 120:
-            Sky(texture=skybox_image2)
+            skybox.texture = skybox_image2
         if localtime > 119 and localtime < 180:
-            Sky(texture=skybox_image3)
+            skybox.texture = skybox_image3
         if localtime > 179 and localtime < 240:
             text_entity2.text = f"Press F to sleep" 
             text_entity2.world_position = (-5, -5)
             text_entity2.world_scale = (48, 48)
-            Sky(texture=skybox_image4)
+            skybox.texture = skybox_image4
         if localtime > 239:
             localtime = 0
         if localtime > 180 or localtime < 60:
@@ -295,8 +273,6 @@ def skyboxManager():
                 food -= 2
             
         localtime += 1
-        
-
         
           
 def HungerManager():
