@@ -44,6 +44,8 @@ text_entity = Text(f"Food:", world_scale=48)
 text_entity.world_position = (-17.5, 9.5)
 text_entity.always_on_top = True
 
+skybox = Sky()
+
 
 
 wp = Panel(
@@ -124,19 +126,19 @@ def skyboxManager():
         
         time.sleep(1)
         if localtime > 0 and localtime < 60:
-            Sky(texture=skybox_image1)
+            skybox.texture = skybox_image1
             text_entity2.world_position = (-5, -5)
             text_entity2.world_scale = (48, 48)
             text_entity2.text = f"Press F to sleep" 
         if localtime > 59 and localtime < 120:
-            Sky(texture=skybox_image2)
+            skybox.texture = skybox_image2
         if localtime > 119 and localtime < 180:
-            Sky(texture=skybox_image3)
+            skybox.texture = skybox_image3
         if localtime > 179 and localtime < 240:
             text_entity2.text = f"Press F to sleep" 
             text_entity2.world_position = (-5, -5)
             text_entity2.world_scale = (48, 48)
-            Sky(texture=skybox_image4)
+            skybox.texture = skybox_image4
         if localtime > 239:
             localtime = 0
         if localtime > 180 or localtime < 60:
