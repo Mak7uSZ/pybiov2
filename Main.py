@@ -24,32 +24,39 @@ app = Ursina()
 
 # Initialize player (FirstPersonController)
 player = FirstPersonController()
-# Настройки подключения
+
 server_ip = "127.0.0.1"
 server_port = 12345
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((server_ip, server_port))
 print("[INFO] Connected to server")
 
-# Получение ID клиента
+# Receive client ID
 data = client_socket.recv(1024)
 your_client_id = data.decode('utf-8').strip()
 print(f"[INFO] Received client ID: {your_client_id}")
 
-# Инициализация игры
-app = Ursina()
+# Initialize Ursina
+# Predefined models for other players
+max_players = 10
+initial_positions = [Vec3(0, 0, 0) for _ in range(max_players)]
+players = {str(i): Entity(
+    model='Models/Player.obj',
+    scale=(1, 1, 1),
+    position=initial_positions[i],
+    color=color.random_color(),
+    visible=False
+) for i in range(max_players)}
+assigned_clients = {}
 
-# Игрок
-player = Entity(model='cube', color=color.orange, scale=(1, 2, 1), position=(0, 1, 0))
-camera.z = -15
+print("[INFO] Predefined player models created.")
 
-# Хранение позиций других игроков
-players = {}
-filtered_positions = {}
-
+# Filter out own position from received data
 def filter_own_position(client_id, positions_data):
     return {key: value for key, value in positions_data.items() if key != client_id}
 
+# Receive positions from server
+filtered_positions = {}
 def receive_positions():
     global filtered_positions
     while True:
@@ -58,49 +65,56 @@ def receive_positions():
             if data:
                 positions_data = json.loads(data.decode('utf-8'))
                 filtered_positions = filter_own_position(your_client_id, positions_data)
+                print(f"[DEBUG] Filtered positions: {filtered_positions}")
         except Exception as e:
             print(f"[ERROR] Error receiving data: {e}")
 
+# Update player positions
 def update_player_positions():
-    global filtered_positions, players
+    global filtered_positions, players, assigned_clients
     while True:
+        # Assign or update models for connected clients
         for client_id, position in filtered_positions.items():
-            if client_id not in players:
-                players[client_id] = Entity(
-                    model='Models/Player.obj',
-                    scale=(1, 1, 1),
-                    position=(position['x'], position['y'], position['z']),
-                    color=color.random_color()
-                )
+            if client_id not in assigned_clients:
+                # Assign an available model
+                available_model = next((p for p_id, p in players.items() if p_id.isdigit() and not p.visible), None)
+                if available_model:
+                    available_model.visible = True
+                    available_model.position = Vec3(position['x'], position['y'], position['z'])
+                    assigned_clients[client_id] = available_model
+                    print(f"[DEBUG] Assigned model to client {client_id}")
+                else:
+                    print(f"[ERROR] No available model for client {client_id}")
             else:
-                players[client_id].position = Vec3(position['x'], position['y'], position['z'])
+                # Update the assigned model's position
+                assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
+                print(f"[DEBUG] Updated position for client {client_id} to {position}")
 
-        # Удаляем сущности, если клиента больше нет
-        for client_id in list(players.keys()):
+        # Return unassigned models to their initial positions
+        for client_id in list(assigned_clients.keys()):
             if client_id not in filtered_positions:
-                players[client_id].disable()
-                del players[client_id]
+                model = assigned_clients.pop(client_id)
+                model.position = Vec3(0, 0, 0)
+                model.visible = False
+                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
 
         time.sleep(0.1)
 
+# Send player position to the server
 def send_position_data():
     while True:
-        player_position = {'x': player.x, 'y': player.y, 'z': player.z}
         try:
+            player_position = {'x': player.x, 'y': player.y, 'z': player.z}
             client_socket.send(json.dumps(player_position).encode('utf-8'))
+            print(f"[INFO] Sent position data: {player_position}")
         except Exception as e:
-            print(f"[ERROR] Error sending data to server: {e}")
+            print(f"[ERROR] Error sending position data: {e}")
         time.sleep(0.1)
 
-# Движение игрока
-
-# Потоки
+# Start threads
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
-
-
-
 
 
 random.seed(5598838209432810483439819859573091790609162098376087326875287218593720980732109328532575197859732905798327967438960256076943109874198759843)
