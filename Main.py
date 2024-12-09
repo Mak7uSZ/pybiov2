@@ -126,6 +126,7 @@ Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
 
+skybox = Sky()
 # 4096 x 1024 JPG
 # sky = Sky(texture="Textures/skybox.jpg")
 
@@ -243,37 +244,35 @@ def skyboxManager():
     print("1")
     skybox_image4 = load_texture("sky_sunset.jpg")
     
-    # while kwit == False:
+    while kwit == False:
         
-    #     time.sleep(1)
-    #     if localtime > 0 and localtime < 60:
-    #         Sky(texture=skybox_image1)
-    #         text_entity2.world_position = (-5, -5)
-    #         text_entity2.world_scale = (48, 48)
-    #         text_entity2.text = f"Press F to sleep" 
-    #     if localtime > 59 and localtime < 120:
-    #         Sky(texture=skybox_image2)
-    #     if localtime > 119 and localtime < 180:
-    #         Sky(texture=skybox_image3)
-    #     if localtime > 179 and localtime < 240:
-    #         text_entity2.text = f"Press F to sleep" 
-    #         text_entity2.world_position = (-5, -5)
-    #         text_entity2.world_scale = (48, 48)
-    #         Sky(texture=skybox_image4)
-    #     if localtime > 239:
-    #         localtime = 0
-    #     if localtime > 180 or localtime < 60:
-    #         if held_keys["f"] and player.intersects(ground).hit == True and player.intersects(water).hit == False:
-    #             sleeptex.scale = (2,2)
-    #             time.sleep(2)
-    #             sleeptex.scale = (0,0)
-    #             text_entity2.world_scale = (0,0)
-    #             localtime = 70
-    #             food -= 2
+        time.sleep(1)
+        if localtime > 0 and localtime < 60:
+            skybox.texture = skybox_image1
+            text_entity2.world_position = (-5, -5)
+            text_entity2.world_scale = (48, 48)
+            text_entity2.text = f"Press F to sleep" 
+        if localtime > 59 and localtime < 120:
+            skybox.texture = skybox_image2
+        if localtime > 119 and localtime < 180:
+            skybox.texture = skybox_image3
+        if localtime > 179 and localtime < 240:
+            text_entity2.text = f"Press F to sleep" 
+            text_entity2.world_position = (-5, -5)
+            text_entity2.world_scale = (48, 48)
+            skybox.texture = skybox_image4
+        if localtime > 239:
+            localtime = 0
+        if localtime > 180 or localtime < 60:
+            if held_keys["f"] and player.intersects(ground).hit == True and player.intersects(water).hit == False:
+                sleeptex.scale = (2,2)
+                time.sleep(2)
+                sleeptex.scale = (0,0)
+                text_entity2.world_scale = (0,0)
+                localtime = 70
+                food -= 2
             
-    #     localtime += 1
-        
-
+        localtime += 1
         
           
 def HungerManager():

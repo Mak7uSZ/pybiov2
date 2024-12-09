@@ -5,7 +5,7 @@ from threading import Thread
 import time
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("10.10.49.151", 12345))
+server_socket.bind(("127.0.0.1", 12345))
 server_socket.listen(5)
 print("Server is listening on port 12345...")
 
