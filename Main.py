@@ -74,33 +74,49 @@ def receive_positions():
 # Update player positions
 def update_player_positions():
     global filtered_positions, players, assigned_clients
-    while True:
-        # Assign or update models for connected clients
+
+    while True:  # Continuous execution
+        # Track which clients are active this cycle
+        active_clients = set(filtered_positions.keys())
+
+        # Update or assign models for active clients
         for client_id, position in filtered_positions.items():
-            if client_id not in assigned_clients:
-                # Assign an available model
-                available_model = next((p for p_id, p in players.items() if p_id.isdigit() and not p.visible), None)
-                if available_model:
-                    available_model.visible = True
-                    available_model.position = Vec3(position['x'], position['y'], position['z'])
-                    assigned_clients[client_id] = available_model
-                    print(f"[DEBUG] Assigned model to client {client_id}")
-                else:
-                    print(f"[ERROR] No available model for client {client_id}")
+            if client_id in assigned_clients:
+                # Update position for already assigned model
+                model_id = assigned_clients[client_id]
+                players[model_id].position = Vec3(position['x'], position['y'], position['z'])
+                players[model_id].visible = True
+                print(f"[DEBUG] Updating position for client {client_id} with model {model_id}: {position}")
             else:
-                # Update the assigned model's position
-                assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
-                print(f"[DEBUG] Updated position for client {client_id} to {position}")
+                # Assign a free model to this client
+                available_model_id = next(
+                    (p_id for p_id, p in players.items() if p_id.isdigit() and not p.visible),
+                    None
+                )
+                if available_model_id:
+                    assigned_clients[client_id] = available_model_id
+                    players[available_model_id].position = Vec3(position['x'], position['y'], position['z'])
+                    players[available_model_id].visible = True
+                    print(f"[DEBUG] Assigned model {available_model_id} to client {client_id}")
+                else:
+                    print(f"[ERROR] No available models for client {client_id}")
 
-        # Return unassigned models to their initial positions
+        # Unassign models for disconnected clients
         for client_id in list(assigned_clients.keys()):
-            if client_id not in filtered_positions:
-                model = assigned_clients.pop(client_id)
-                model.position = Vec3(0, 0, 0)
-                model.visible = False
-                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
+            if client_id not in active_clients:
+                model_id = assigned_clients.pop(client_id)
+                players[model_id].position = Vec3(0, 0, 0)
+                players[model_id].visible = False
+                print(f"[DEBUG] Unassigned model {model_id} from client {client_id}")
 
-        time.sleep(0.1)  # Задержка перед следующим обновлением
+        # Debugging: Check state of players and assignments
+        print(f"[DEBUG] Current assignments: {assigned_clients}")
+
+        # Sleep briefly to avoid excessive CPU usage
+        time.sleep(0.1)
+
+
+
 
 
 
