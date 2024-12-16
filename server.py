@@ -54,8 +54,47 @@ def broadcast_positions():
                     del clients[client_socket]
         time.sleep(0.1)
 
+servertijd = 0
+
+def update_servertijd():
+    global servertijd
+    while True:
+        servertijd += 1
+
+        if servertijd > 239:
+            servertijd = 0
+
+        time.sleep(1)
+
+def broadcast_tijd():
+    while True:
+        try:
+            # Check if servertijd has a valid value
+            if servertijd is not None:
+                print(servertijd)
+                # Convert servertijd to JSON
+                tijd_data = json.dumps(servertijd)
+                
+                # Broadcast to all connected clients
+                for client_socket in list(clients.keys()):
+                    try:
+                        client_socket.sendall(tijd_data.encode('utf-8'))
+                    except Exception as e:
+                        print(f"[ERROR] Error sending tijd_data to client {clients[client_socket]}: {e}")
+                        # Optionally remove the problematic client
+                        del clients[client_socket]
+        except Exception as e:
+            print(f"[ERROR] Error in broadcast loop: {e}")
+        
+        # Wait a short period before the next broadcast
+        time.sleep(0.1)
+
 Thread(target=broadcast_positions, daemon=True).start()
+Thread(target=update_servertijd, daemon=True).start()
+Thread(target=broadcast_tijd, daemon=True).start()
 
 while True:
     client_socket, client_address = server_socket.accept()
     Thread(target=handle_client, args=(client_socket, client_address), daemon=True).start()
+
+

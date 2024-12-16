@@ -71,6 +71,21 @@ def receive_positions():
         except Exception as e:
             print(f"[ERROR] Error receiving data: {e}")
 
+
+def receive_tijd():
+    global servertijd
+    while True:
+        try:
+            # Receive data from the socket
+            tijd_data = client_socket.recv(4096)
+            if tijd_data:
+                # Decode and parse JSON from the received data
+                servertijd = json.loads(tijd_data.decode('utf-8'))
+                print(f"[DEBUG] received tijd: {servertijd}")
+        except Exception as e:
+            print(f"[ERROR] Error receiving data: {e}")
+
+
 # Update player positions
 def update_player_positions():
     global filtered_positions, players, assigned_clients
@@ -116,6 +131,7 @@ def send_position_data():
         time.sleep(0.1)
 
 # Start threads
+Thread(target=receive_tijd, daemon=True).start()
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
@@ -139,7 +155,7 @@ human_cacher.position_y = 100
 
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, color="27DCA3", origin_y=-.9, speed=20, collider='box')
-
+ 
 # Assuming player models are already created for each client and stored in a dictionary
 # The player_models dictionary holds the model reference using the client_id as the key
 # We only need to update their positions
@@ -222,7 +238,7 @@ katerpilaarlist = []
 shootables_parent = Entity()
 mouse.traverse_target = shootables_parent
 kwit = False
-localtime = 0
+localtime = servertijd
 food = 5
 
 text_entity2 = Text("sigma", world_position = (-20, -20))
