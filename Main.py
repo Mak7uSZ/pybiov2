@@ -21,7 +21,7 @@ if __name__ == "__main__":
     ip = ip_var.value.decode('utf-8').strip()
     port = port_var.value.decode('utf-8').strip()
 
-    print(f"Успешное подключение: IP={ip}, PORT={port}")
+    print(f"succes connection: IP={ip}, PORT={port}")
 
     # Завершаем part1.py
     part1_process.terminate()

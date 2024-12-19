@@ -25,7 +25,7 @@ class MainMenu(Entity):
         self.port_input = InputField(text='8080', position=(0.2, 0), scale=(0.5, 0.05))
         
         # Кнопка подключения
-        self.connect_button = Button(text="Подключиться", position=(0, -0.1), scale=(0.3, 0.1), on_click=self.connect)
+        self.connect_button = Button(text="Connect", position=(0, -0.1), scale=(0.3, 0.1), on_click=self.connect)
         
         # Текст статуса подключения
         self.connection_status = Text(text='', position=(0, -0.2), origin=(0, 0), color=color.red)
@@ -36,14 +36,14 @@ class MainMenu(Entity):
 
         # Проверяем подключение
         if Connection.test_connection(ip, port):
-            self.connection_status.text = "Подключение успешно!"
+            self.connection_status.text = "Succes connect"
 
             # Сохраняем данные в общие переменные
             self.ip_var.value = ip.encode('utf-8')
             self.port_var.value = port.encode('utf-8')
             self.status_var.value = 1  # Устанавливаем статус успешного подключения
         else:
-            self.connection_status.text = "Ошибка подключения. Проверьте IP и порт."
+            self.connection_status.text = "error connect. Check ip and the port"
 
 # Функция для запуска первой части кода
 def run_part1(ip_var, port_var, status_var):

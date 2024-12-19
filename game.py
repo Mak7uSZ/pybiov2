@@ -31,13 +31,13 @@ import sys
 if __name__ == "__main__":
     # Получаем аргументы командной строки
     if len(sys.argv) != 3:
-        print("[ERROR] Необходимо передать IP и порт.")
+        print("[ERROR] need to receive ip and the port")
         sys.exit(1)
 
     ip = sys.argv[1]  # Первый аргумент после имени файла
     port = sys.argv[2]  # Второй аргумент после имени файла
 
-    print(f"[INFO] Получен IP: {ip}, порт: {port}")
+    print(f"[INFO] received ip: {ip}, port: {port}")
 
 
 server_ip = ip
