@@ -71,7 +71,6 @@ def broadcast_tijd():
         try:
             # Check if servertijd has a valid value
             if servertijd is not None:
-                print(servertijd)
                 # Convert servertijd to JSON
                 tijd_data = json.dumps(servertijd)
                 

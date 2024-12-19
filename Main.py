@@ -21,14 +21,67 @@ import json
 import time
 from ursina import Vec3
 import keyboard
+
+from ursina import *
+
+# Функция, которая выводит сообщение при наведении на кнопку
+from ursina import *
+
+# Функция для обработки нажатия кнопки\
+ip = None
+port = None
+
+# Функция для обработки нажатия кнопки
+def connect():
+    global ip, port
+    ip = ip_input.text
+    port = port_input.text
+    if ip and port.isdigit():
+        print(f"[INFO] Попытка подключения к {ip}:{port}")
+        # Здесь можно добавить логику подключения к серверу
+    else:
+        print("[ERROR] Введите корректные IP-адрес и порт.")
+
+# Функция для проверки наведения мыши
+def update():
+    if connect_button.hovered:
+        print("[DEBUG] Мышь наведена на кнопку.")  # Сообщение при наведении мыши на кнопку
+
+# Создаем приложение
 app = Ursina()
 
-# Initialize player (FirstPersonController)
-player = FirstPersonController()
+# Включаем курсор
+mouse.visible = True
 
-# Настройки подключения
-server_ip = "127.0.0.1"
-server_port = 12345
+# Камера в 2D
+camera.orthographic = True
+camera.fov = 10
+
+# Фон
+background = Entity(parent=camera.ui, model='quad', texture='white_cube', scale=(1.5, 1), color=color.dark_gray)
+
+# Заголовок
+title = Text("Главное меню", parent=camera.ui, y=0.4, origin=(0, 0), scale=2, color=color.white)
+
+# Поле ввода для IP-адреса
+ip_input = InputField(parent=camera.ui, y=0.2, placeholder='Введите IP-адрес', scale=(0.5, 0.1))
+
+# Поле ввода для порта
+port_input = InputField(parent=camera.ui, y=0, placeholder='Введите порт', scale=(0.5, 0.1))
+
+# Кнопка подключения
+connect_button = Button(parent=camera.ui, scale=(0.3, 0.1), color=color.azure, text="Подключиться", y=-0.2)
+connect_button.on_click = connect  # Привязываем функцию к кнопке
+
+# Инициализация игрока
+player = FirstPersonController(enabled=False)  # Отключен до подключения
+
+# Запуск приложения
+app.run()
+
+
+server_ip = ip
+server_port = port
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((server_ip, server_port))
 print("[INFO] Connected to server")
