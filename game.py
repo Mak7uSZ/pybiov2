@@ -39,12 +39,22 @@ if __name__ == "__main__":
 
     print(f"[INFO] received ip: {ip}, port: {port}")
 
-
+time.sleep(1)
 server_ip = ip
 server_port = int(port)
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((server_ip, server_port))
-print("[INFO] Connected to server")
+
+while True:
+        try:
+            # Создаем сокет для подключения
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.settimeout(1)  # Устанавливаем таймаут 1 секунду
+            client_socket.connect((server_ip, server_port))
+            print(f"Успешно подключились к серверу на {ip}:{port}")
+            client_socket.close()  # Закрываем сокет после успешного подключения
+            break  # Если подключение успешно, выходим из цикла
+        except (socket.timeout, ConnectionRefusedError):
+            print(f"Сервер еще не готов, повторная попытка через 1 секунду...")
+            time.sleep(1)  # Пауза перед повторной попыткой
 
 # Receive client ID
 data = client_socket.recv(1024)
