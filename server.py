@@ -4,28 +4,18 @@ import uuid
 from threading import Thread
 import time
 import part1
-from part1 import MainMenu
 import random
-
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 import hashlib
-def generate_port(key: str) -> int:
-    # Генерируем порт, используя хеш-значение от ключа
-    hash_value = hashlib.sha256(key.encode()).hexdigest()
-    port = int(hash_value[:5], 16) % 65535  # Берем первые 5 символов хеша и приводим к диапазону портов
-    if port < 1024:  # Избегаем системных портов
-        port += 1024
-    return port
+import sys
 
 # Пример использования
-key = "unique-server-key"
-random_port = generate_port(key)
-print(f"Generated port: {random_port}")
+generated_port = int(sys.argv[1])
+print(f"Generated port2: {generated_port}")
 
-server_socket.bind(("0.0.0.0", random_port))
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(("127.0.0.1", generated_port))
 server_socket.listen(5)
-print(f"Server is listening on port {random_port}...")
+print(f"Server is listening on port {generated_port}...")
 
 clients = {}  # Сопоставление client_socket -> client_id
 clients_positions = {}

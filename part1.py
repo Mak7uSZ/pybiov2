@@ -4,9 +4,10 @@ import time
 import random
 from ursina import *
 import threading
+import sys
 
 class MainMenu(Entity):
-    def __init__(self, ip_var=None, port_var=None, status_var=None):
+    def __init__(self, generated_port_value, ip_var=None, port_var=None, status_var=None):
         super().__init__()
         self.enabled = True
         
@@ -14,8 +15,10 @@ class MainMenu(Entity):
         self.ip_var = ip_var
         self.port_var = port_var
         self.status_var = status_var
+        self.generated_port_value = generated_port_value
+        print(f"Received generated port in part1.py: {self.generated_port_value.value}")
         
-        # Кнопка для создания сервера
+        # Кнопка для создания сервера   
         self.create_server_button = Button(text="Создать сервер", position=(0, 0.1), scale=(0.3, 0.1), on_click=self.create_server)
         
         # Кнопка для подключения
@@ -34,9 +37,10 @@ class MainMenu(Entity):
         def server_thread():
             """Функция, которая будет запускать сервер в отдельном потоке"""
             print("Создаем сервер...")
-
+            generated_port = int(self.generated_port_value.value)
+            print(f"Using generated port in server_thread: {generated_port}")
             # Запускаем сервер в фоновом процессе
-            process = subprocess.Popen(["python", "server.py"])  # Используем Popen, чтобы процесс продолжался в фоновом режиме
+            process = subprocess.Popen(["python", "server.py", str(generated_port)])  # Используем Popen, чтобы процесс продолжался в фоновом режиме
 
             # Ожидаем некоторое время, чтобы сервер успел запуститься (например, 1 секунда)
             time.sleep(1)  # Можно регулировать время в зависимости от того, сколько времени требуется серверу для старта
@@ -46,35 +50,16 @@ class MainMenu(Entity):
             else:
                 print("Сервер не запустился!")
 
-            # Генерация случайного порта (например, от 10000 до 99999)
-            import hashlib
-
-            def generate_port(key: str) -> int:
-                # Генерируем порт, используя хеш-значение от ключа
-                hash_value = hashlib.sha256(key.encode()).hexdigest()
-                port = int(hash_value[:5], 16) % 65535  # Берем первые 5 символов хеша и приводим к диапазону портов
-                if port < 1024:  # Избегаем системных портов
-                    port += 1024
-                return port
-
-            # Пример использования
-            key = "unique-server-key"
-            random_port = generate_port(key)
-            print(f"Generated port: {random_port}")
-
             ip = '127.0.0.1'  # Локальный сервер
 
-            print(f"Сервер запущен на {ip}:{random_port}")
+            print(f"Сервер запущен на {ip}:{generated_port}")
 
             # Запускаем game.py с IP и случайным портом
-            self.run_game(ip, random_port)
+            self.run_game(ip, generated_port)
 
         # Создаем и запускаем отдельный поток для сервера
         server_thread_instance = threading.Thread(target=server_thread)
         server_thread_instance.start()
-        
-
-# Пример использования
         
     def connect_to_server(self):
         """Подключение к существующему серверу"""
@@ -98,6 +83,10 @@ class MainMenu(Entity):
         # Вы можете запускать свою игру, передавая параметры
         print(f"Запускаем игру с сервером {ip}:{port}")
         subprocess.Popen(["python", "game.py", ip, str(port)])
+        self.close_menu()  # Закрываем главное меню после запуска игры
+    
+    def close_menu(self):
+        """Закрытие главного меню"""
         self.enabled = False  # Отключаем главное меню
     
     @staticmethod
@@ -109,9 +98,7 @@ class MainMenu(Entity):
         except:
             return False
 
-
-
-def run_part1(ip_var, port_var, status_var):
+def run_part1(ip_var, port_var, status_var, generated_port_value):
     app = Ursina()
-    main_menu = MainMenu(ip_var=ip_var, port_var=port_var, status_var=status_var)
+    main_menu = MainMenu(ip_var=ip_var, port_var=port_var, status_var=status_var, generated_port_value=generated_port_value)
     app.run()
