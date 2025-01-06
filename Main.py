@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # Конвертируем данные из bytes в str
     ip = ip_var.value.decode('utf-8').strip()
-    port = port_var.value.decode('utf-8').strip()
+    port = port_var.value.decode('ut f-8').strip()
 
     print(f"succes connection: IP={ip}, PORT={port}")
 

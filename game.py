@@ -25,6 +25,20 @@ from ursina import *
 from part1 import run_part1
 # Функция, которая выводит сообщение при наведении на кнопку
 from ursina import *
+from perlin_noise import PerlinNoise
+import random
+
+import time
+from PIL import Image, ImageEnhance
+from ursina import *
+from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.shaders import *
+from ursina.lights import DirectionalLight
+from threading import Thread
+import keyboard
+from ursina.texture_importer import load_texture
+from ursina import *
+from perlin_noise import PerlinNoise
 
 import sys
 
@@ -181,45 +195,63 @@ Thread(target=receive_tijd, daemon=True).start()
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
-
-
-random.seed(5598838209432810483439819859573091790609162098376087326875287218593720980732109328532575197859732905798327967438960256076943109874198759843)
+random.seed(6)
 Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
 
-skybox = Sky()
 # 4096 x 1024 JPG
 # sky = Sky(texture="Textures/skybox.jpg")
 
-ground = Entity(model='Models/Newterrain.obj', collider='mesh', scale=4, texture='Textures/TerrainTexture.png')
-#murren = Entity(model='Models/skyrealtrustme.obj', collider='mesh', scale=4, texture='Textures/homo.nl.png',texture_scale=(1,1))
+noise = PerlinNoise(octaves=3, seed=random.randint(0, 1000))
+level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
+
+amp = 3
+freq = 24
+width = 35
+
+for x in range(1, width):
+    for z in range(1, width):
+        # add two triangles for each new point
+        y00 = noise([x/freq, z/freq]) * amp
+        y10 = noise([(x-1)/freq, z/freq]) * amp
+        y11 = noise([(x-1)/freq, (z-1)/freq]) * amp
+        y01 = noise([x/freq, (z-1)/freq]) * amp
+        level_parent.model.vertices += (
+            # first triangle
+            (x, y00, z),
+            (x-1, y10, z),
+            (x-1, y11, z-1),
+            # second triangle
+            (x, y00, z),
+            (x-1, y11, z-1),
+            (x, y01, z-1)
+        )
+
+level_parent.model.generate()
+level_parent.model.project_uvs() # for texture
+level_parent.model.generate_normals() # for lighting
+level_parent.collider = 'mesh'
+level_parent.world_scale = 50  # for collision
+#ground = Entity(model='Models/Newterrain.obj', collider='mesh', scale=4, texture='Textures/TerrainTexture.png')
+# murren = Entity(model='Models/skyrealtrustme.obj', collider='mesh', scale=4, texture='Textures/homo.nl.png',texture_scale=(1,1))
 water = Entity(model='Models/Water.obj', scale=4, texture='Textures/Daunload.jpg', texture_scale=(128,128), collider='box')
-water.collision = True
+# water.collision = True
 human_cacher = Entity(model="Models/Human catcher.obj", collider='mesh', scale=4, texture_scale=(128,128))
 human_cacher.position_y = 100
 
+infiniter = Mesh(vertices=[[0,0,0], [10,0,0], [0,0,10], [10,0,10]],
+                 triangles=[[0,1,2]])
+
+ground = Entity(model=infiniter)
+
+
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, color="27DCA3", origin_y=-.9, speed=20, collider='box')
- 
-# Assuming player models are already created for each client and stored in a dictionary
-# The player_models dictionary holds the model reference using the client_id as the key
-# We only need to update their positions
-
-# Dictionary to store existing player models (if not already created)
-# Assuming `your_client_id` is the ID of your own client, which you already have
-
-# Dictionary to store existing player models (if not already created)
-# Assuming `your_client_id` is the ID of your own client, which you already have
-
-# Dictionary to store existing player models (if not already created)
-
-
-
 
 player._collider = BoxCollider(player, (0,0,0), (0.5, 1, 0.5))
-player.position = Vec3(0, 100, 0)
-camera.fov = 100
+player.position = Vec3(0, 60, 0)
+camera.fov = 90
 gun = Entity(model='Models/hand.obj', parent=camera, position=(.5,-.25,1.8), scale=(.3,.2,.2), origin_z=-.5, texture="Textures/handtexture.png")
 gun.world_rotation_y=70
 gun.world_rotation_x=-20
@@ -231,6 +263,7 @@ text_entity.world_position = (-17.5, 9.5)
 text_entity.always_on_top = True
 ip_port = Text(f"{ip}: {port}", scale=1)
 ip_port.world_position = (10, 9.9)
+
 
 
 
@@ -268,27 +301,27 @@ sleeptex.scale = (0,0)
 wp.scale = (0.6,0.2)
 wp.position = window.top_left    # center the window panel
 
-hunger = Panel(
+hungertex = Panel(
     title='',
-    content=(
-        ),
-    popup=False
-    )
+    content=(),
+    popup=False,
+    scale = (0.05,0.18),
+    enabled = True,
+    position = window.top_left,
+    color = color.yellow
+)
+    # center the window panel
 
-hunger.scale = (0.05,0.18)
-hunger.position = window.top_left    # center the window panel
-hunger.color = color.yellow
 
-hunger.enabled = True
 #text_entity.food = 59
 # text_entity.screen_position = window.top_right
 katerpilaarlist = []
 shootables_parent = Entity()
 mouse.traverse_target = shootables_parent
 kwit = False
-localtime = servertijd
+localtime = 0
 food = 5
-
+skybox = Sky()
 text_entity2 = Text("sigma", world_position = (-20, -20))
 def skyboxManager():
     global food
@@ -299,36 +332,29 @@ def skyboxManager():
         quit()
     
     global localtime
-    print("1")
-    skybox_image1 = load_texture("sky_night.jpg")
-    print("1")
-    skybox_image2 = load_texture("sky_morning.jpg")
-    print("1")
-    skybox_image3 = load_texture("Middag.jpg")
-    print("1")
-    skybox_image4 = load_texture("sky_sunset.jpg")
+    image_list = ["sky_night.jpg", "sky_morning.jpg", "Middag.jpg", "sky_sunset.jpg"]
+    skybox_images = [load_texture(tex) for tex in image_list]
     
     while kwit == False:
         
         time.sleep(1)
         if localtime > 0 and localtime < 60:
-            skybox.texture = skybox_image1
+            skybox.texture = skybox_images[0]
             text_entity2.world_position = (-5, -5)
-            text_entity2.world_scale = (48, 48)
-            text_entity2.text = f"Press F to sleep" 
+            text_entity2.world_scale = (48, 48) 
         if localtime > 59 and localtime < 120:
-            skybox.texture = skybox_image2
+            skybox.texture = skybox_images[1]
         if localtime > 119 and localtime < 180:
-            skybox.texture = skybox_image3
+            skybox.texture = skybox_images[2]
         if localtime > 179 and localtime < 240:
-            text_entity2.text = f"Press F to sleep" 
+            text_entity2.text = f" " 
             text_entity2.world_position = (-5, -5)
             text_entity2.world_scale = (48, 48)
-            skybox.texture = skybox_image4
+            skybox.texture = skybox_images[3]
         if localtime > 239:
             localtime = 0
         if localtime > 180 or localtime < 60:
-            if held_keys["f"] and player.intersects(ground).hit == True and player.intersects(water).hit == False:
+            if keyboard.is_pressed("f") and player.intersects(ground).hit == True and player.intersects(water).hit == False:
                 sleeptex.scale = (2,2)
                 time.sleep(2)
                 sleeptex.scale = (0,0)
@@ -337,6 +363,8 @@ def skyboxManager():
                 food -= 2
             
         localtime += 1
+        
+
         
           
 def HungerManager():
@@ -400,7 +428,7 @@ def HungerManager():
             enemy.world_position = sigma_vector
             katerpilaarlist.append(enemy)
 
-        hunger.scale = ((0.6 * food / 10), 0.18)
+        hungertex.scale = ((0.6 * food / 10), 0.18)
         
         foodcounter += 1
         katerpilaarcounter += 1
@@ -466,6 +494,7 @@ for i in range(2):
 currenseed = 1
 
 def update():
+    
     global currenseed
     currenseed += 1
     random.seed(currenseed)
@@ -482,44 +511,26 @@ def update():
         watertex.scale = (2, 2)
     else:
         watertex.scale = (0, 0)
-    if player.intersects(water).hit == True and touchingland == False:
-        if held_keys['space']:
+    if player.intersects(water).hit:
+        if keyboard.is_pressed('space'):
+            print(player.gravity)
+        # if held_keys['space']:
             
-            player.y += 1.2
-            player.gravity = 0
+            # player.y += 1
+            player.gravity = -5
+            print(player.gravity)
         else:
-            
-            player.y -= 1
-            player.gravity = 0
+            if touchingland == False:
+                player.y -= 1
+                player.gravity = 0
         #print("toucher water")
     else:
-        pass
+        player.gravity = 1
         #pass
     #    player.gravity = 1
 
-    if player.intersects(human_cacher).hit:
-        player.y = 20
-        player.z = -10
-        player.x = 0
 
 
-
-    if held_keys['left mouse']:
-       player.y += 10
-       player.speed = 500
-       player.y = 60
-       player.z = -10
-       player.x = 0
-    elif held_keys['right mouse']:
-       player.y -= 10
-       player.speed = 500
-    elif held_keys['middle mouse']:
-       # player.y -= 10
-       player.speed = 500
-       player.gravity = 0
-    else:
-       player.speed = 20
-       player.gravity = 1
 
 from ursina.prefabs.health_bar import HealthBar
 def pause_input(key):
@@ -527,13 +538,13 @@ def pause_input(key):
         global kwit
         kwit = True
         quit()
-        #editor_camera.enabled = not editor_camera.enabled
+        # editor_camera.enabled = not editor_camera.enabled
 
-        #player.visible_self = editor_camera.enabled
-        #player.cursor.enabled = not editor_camera.enabled
-        #gun.enabled = not editor_camera.enabled
-        #mouse.locked = not editor_camera.enabled
-        #editor_camera.position = player.position
+        # player.visible_self = editor_camera.enabled
+        # player.cursor.enabled = not editor_camera.enabled
+        # gun.enabled = not editor_camera.enabled
+        # mouse.locked = not editor_camera.enabled
+        # editor_camera.position = player.position
         
         #application.paused = editor_camera.enabled
 
