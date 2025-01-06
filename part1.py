@@ -15,6 +15,9 @@ class MainMenu(Entity):
         self.generated_port_value = generated_port_value
         print(f"Received generated port in part1.py: {self.generated_port_value.value}")
         
+        welcome_text = Text("PyGame Biologie V2.0", scale=3)
+        welcome_text.world_position = (-6.6, 6)
+
         # Кнопка для создания сервера   
         self.create_server_button = Button(text="create server", position=(0, 0.1), scale=(0.3, 0.1), on_click=self.create_server)
         
@@ -22,7 +25,11 @@ class MainMenu(Entity):
         self.connect_button = Button(text="connect to server", position=(0, -0.1), scale=(0.3, 0.1), on_click=self.connect_to_server)
         
         # Поля ввода IP и порта (только для подключения)
+        ip_text = Text("IP", scale=1)
+        ip_text.world_position = (-8, -4.5)
         self.ip_input = InputField(text='127.0.0.1', position=(-0.4, -0.3), scale=(0.5, 0.05))
+        port_text = Text("PORT", scale=1)
+        port_text.world_position = (3, -4.5)
         self.port_input = InputField(text='8080', position=(0.2, -0.3), scale=(0.5, 0.05))
         
         # Отключаем поля ввода IP и порта до того, как выберется опция подключения
