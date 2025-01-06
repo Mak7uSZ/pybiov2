@@ -43,6 +43,9 @@ time.sleep(1)
 server_ip = ip
 server_port = int(port)
 
+
+time.sleep(5)
+
 while True:
         try:
             # Создаем сокет для подключения
@@ -50,17 +53,15 @@ while True:
             client_socket.settimeout(1)  # Устанавливаем таймаут 1 секунду
             client_socket.connect((server_ip, server_port))
             print(f"Успешно подключились к серверу на {ip}:{port}")
-            client_socket.close()  # Закрываем сокет после успешного подключения
+            data = client_socket.recv(1024)
+            your_client_id = data.decode('utf-8').strip()
+            print(f"[INFO] Received client ID: {your_client_id}")
             break  # Если подключение успешно, выходим из цикла
         except (socket.timeout, ConnectionRefusedError):
             print(f"Сервер еще не готов, повторная попытка через 1 секунду...")
             time.sleep(1)  # Пауза перед повторной попыткой
 
 # Receive client ID
-data = client_socket.recv(1024)
-your_client_id = data.decode('utf-8').strip()
-print(f"[INFO] Received client ID: {your_client_id}")
-
 app = Ursina()
 
 # Initialize Ursina
@@ -86,15 +87,35 @@ def filter_own_position(client_id, positions_data):
 filtered_positions = {}
 def receive_positions():
     global filtered_positions
+    buffer = ""  # To handle incomplete messages
     while True:
         try:
             data = client_socket.recv(4096)
             if data:
-                positions_data = json.loads(data.decode('utf-8'))
-                filtered_positions = filter_own_position(your_client_id, positions_data)
-                print(f"[DEBUG] Filtered positions: {filtered_positions}")
+                # Decode and add to buffer
+                buffer += data.decode('utf-8')
+
+                # Process complete messages in buffer
+                while "\n" in buffer:  # Assuming newline is used as a delimiter
+                    message, buffer = buffer.split("\n", 1)
+                    try:
+                        parsed_message = json.loads(message)
+                        
+                        # Check if message type is "positions"
+                        if parsed_message.get("type") == "positions":
+                            positions_data = parsed_message.get("data")
+                            if isinstance(positions_data, dict):
+                                filtered_positions = filter_own_position(your_client_id, positions_data)
+                                print(f"[DEBUG] Filtered positions: {filtered_positions}")
+                            else:
+                                print(f"[ERROR] Positions data is not a valid dictionary: {positions_data}")
+                        else:
+                            print(f"[INFO] Received non-positions message: {parsed_message}")
+                    except json.JSONDecodeError:
+                        print(f"[ERROR] Failed to decode JSON message: {message}")
         except Exception as e:
-            print(f"[ERROR] Error receiving data: {e}")
+            print(f"[ERROR] Error receiving data (positions): {e}")
+
 
 
 def receive_tijd():
@@ -108,7 +129,7 @@ def receive_tijd():
                 servertijd = json.loads(tijd_data.decode('utf-8'))
                 print(f"[DEBUG] received tijd: {servertijd}")
         except Exception as e:
-            print(f"[ERROR] Error receiving data: {e}")
+            print(f"[ERROR] Error receiving data(tijd): {e}")
 
 
 # Update player positions
@@ -197,7 +218,7 @@ player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, 
 
 
 player._collider = BoxCollider(player, (0,0,0), (0.5, 1, 0.5))
-player.position = Vec3(0, 60, 0)
+player.position = Vec3(0, 100, 0)
 camera.fov = 100
 gun = Entity(model='Models/hand.obj', parent=camera, position=(.5,-.25,1.8), scale=(.3,.2,.2), origin_z=-.5, texture="Textures/handtexture.png")
 gun.world_rotation_y=70
@@ -208,6 +229,8 @@ gun.muzzle_flash = Entity(parent=gun, z=1, world_scale=.5, model='quad', color=c
 text_entity = Text(f"Food:", world_scale=48)
 text_entity.world_position = (-17.5, 9.5)
 text_entity.always_on_top = True
+ip_port = Text(f"{ip}: {port}", scale=1)
+ip_port.world_position = (10, 9.9)
 
 
 

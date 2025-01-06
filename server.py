@@ -3,17 +3,17 @@ import json
 import uuid
 from threading import Thread
 import time
-import part1
-import random
-import hashlib
 import sys
 
 # Пример использования
 generated_port = int(sys.argv[1])
 print(f"Generated port2: {generated_port}")
 
+
+hostname = socket.gethostname()
+local_ip = socket.gethostbyname(hostname)
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("127.0.0.1", generated_port))
+server_socket.bind((local_ip, generated_port))
 server_socket.listen(5)
 print(f"Server is listening on port {generated_port}...")
 
@@ -53,10 +53,10 @@ def handle_client(client_socket, client_address):
 def broadcast_positions():
     while True:
         if clients_positions:
-            positions_data = json.dumps(clients_positions)
+            positions_message = json.dumps({"type": "positions", "data": positions_data})
             for client_socket in list(clients.keys()):
                 try:
-                    client_socket.sendall(positions_data.encode('utf-8'))
+                    client_socket.sendall(positions_message.encode('utf-8'))
                 except Exception as e:
                     print(f"[ERROR] Error sending data to client {clients[client_socket]}: {e}")
                     del clients[client_socket]
@@ -85,7 +85,8 @@ def broadcast_tijd():
                 # Broadcast to all connected clients
                 for client_socket in list(clients.keys()):
                     try:
-                        client_socket.sendall(tijd_data.encode('utf-8'))
+                        tijd_message = json.dumps({"type": "time", "data": tijd_data})
+                        client_socket.sendall(tijd_message.encode('utf-8'))
                     except Exception as e:
                         print(f"[ERROR] Error sending tijd_data to client {clients[client_socket]}: {e}")
                         # Optionally remove the problematic client

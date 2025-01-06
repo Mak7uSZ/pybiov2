@@ -1,11 +1,8 @@
 import subprocess
 import socket
 import time
-import random
 from ursina import *
 import threading
-import sys
-
 class MainMenu(Entity):
     def __init__(self, generated_port_value, ip_var=None, port_var=None, status_var=None):
         super().__init__()
@@ -19,10 +16,10 @@ class MainMenu(Entity):
         print(f"Received generated port in part1.py: {self.generated_port_value.value}")
         
         # Кнопка для создания сервера   
-        self.create_server_button = Button(text="Создать сервер", position=(0, 0.1), scale=(0.3, 0.1), on_click=self.create_server)
+        self.create_server_button = Button(text="create server", position=(0, 0.1), scale=(0.3, 0.1), on_click=self.create_server)
         
         # Кнопка для подключения
-        self.connect_button = Button(text="Подключиться к серверу", position=(0, -0.1), scale=(0.3, 0.1), on_click=self.connect_to_server)
+        self.connect_button = Button(text="connect to server", position=(0, -0.1), scale=(0.3, 0.1), on_click=self.connect_to_server)
         
         # Поля ввода IP и порта (только для подключения)
         self.ip_input = InputField(text='127.0.0.1', position=(-0.4, -0.3), scale=(0.5, 0.05))
@@ -49,9 +46,11 @@ class MainMenu(Entity):
                 print("Сервер работает!")
             else:
                 print("Сервер не запустился!")
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname)
+            ip = local_ip
 
-            ip = '127.0.0.1'  # Локальный сервер
-
+# Get the public IP address
             print(f"Сервер запущен на {ip}:{generated_port}")
 
             # Запускаем game.py с IP и случайным портом
