@@ -195,7 +195,9 @@ Thread(target=receive_tijd, daemon=True).start()
 Thread(target=receive_positions, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
-random.seed(6)
+
+
+random.seed(port)
 Entity.default_shader = unlit_shader
 sun = DirectionalLight(shadow_map_resolution=(2048,2048))
 sun.look_at(Vec3(-1,-1,-10))
