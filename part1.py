@@ -40,25 +40,25 @@ class MainMenu(Entity):
         """Создание локального сервера и подключение к нему"""
         def server_thread():
             """Функция, которая будет запускать сервер в отдельном потоке"""
-            print("Создаем сервер...")
+            print("creating server...")
             generated_port = int(self.generated_port_value.value)
             print(f"Using generated port in server_thread: {generated_port}")
             # Запускаем сервер в фоновом процессе
             process = subprocess.Popen(["python", "server.py", str(generated_port)])  # Используем Popen, чтобы процесс продолжался в фоновом режиме
 
             # Ожидаем некоторое время, чтобы сервер успел запуститься (например, 1 секунда)
-            time.sleep(1)  # Можно регулировать время в зависимости от того, сколько времени требуется серверу для старта
+            time.sleep(5)  # Можно регулировать время в зависимости от того, сколько времени требуется серверу для старта
 
             if process.poll() is None:
-                print("Сервер работает!")
+                print("server works!")
             else:
-                print("Сервер не запустился!")
+                print("server didnt start!")
             hostname = socket.gethostname()
             local_ip = socket.gethostbyname(hostname)
             ip = local_ip
 
 # Get the public IP address
-            print(f"Сервер запущен на {ip}:{generated_port}")
+            print(f"server started on {ip}:{generated_port}")
 
             # Запускаем game.py с IP и случайным портом
             self.run_game(ip, generated_port)
@@ -69,31 +69,26 @@ class MainMenu(Entity):
         
     def connect_to_server(self):
         """Подключение к существующему серверу"""
-        ip = self.ip_input.text
-        port = self.port_input.text
+        ip_input = self.ip_input.text
+        port_input = self.port_input.text
 
-        print(f"Подключаемся к серверу {ip}:{port}")
+        print(f"COnnecting to server {ip_input}:{port_input}")
         
         # Проверяем, доступен ли сервер
-        if self.test_connection(ip, port):
-            print("Подключение успешно!")
-            self.run_game(ip, port)
+        if self.test_connection(ip_input, port_input):
+            print("Succesfull connection!")
+            self.run_game(ip_input, port_input)
         else:
-            print("Ошибка подключения!")
+            print("Error connection!")
             # Можно очистить поля ввода или отобразить сообщение о неудаче
             self.ip_input.text = ''
             self.port_input.text = ''
         
-    def run_game(self, ip, port):
+    def run_game(self, ip_input, port_input):
         """Запуск игры"""
         # Вы можете запускать свою игру, передавая параметры
-        print(f"Запускаем игру с сервером {ip}:{port}")
-        subprocess.Popen(["python", "game.py", ip, str(port)])
-        self.close_menu()  # Закрываем главное меню после запуска игры
-    
-    def close_menu(self):
-        """Закрытие главного меню"""
-        self.enabled = False  # Отключаем главное меню
+        print(f"Starting server with: {ip_input}:{port_input}")
+        subprocess.Popen(["python", "game.py", ip_input, str(port_input)])
     
     @staticmethod
     def test_connection(ip, port):
