@@ -72,16 +72,16 @@ class MainMenu(Entity):
         server_thread_instance.start()
         
     def connect_to_server(self):
-        ip_input = self.ip_input.text
-        port_input = self.port_input.text
+        ip = self.ip_input.text
+        port = self.port_input.text
 
-        print(f"COnnecting to server {ip_input}:{port_input}")
+        print(f"COnnecting to server {ip}:{port}")
             
             # Проверяем, доступен ли сервер
-        if self.test_connection(ip_input, port_input):
-            self.test_connection(ip_input, port_input)
+        if self.test_connection(ip, port):
+            self.test_connection(ip, port)
             print("Succesfull connection!")
-            self.run_game(ip_input, port_input)
+            self.run_game(ip, port)
         else:
             print(f"Error connection!{e}")
                 # Можно очистить поля ввода или отобразить сообщение о неудаче
@@ -89,7 +89,7 @@ class MainMenu(Entity):
             self.port_input.text = ''
             
 
-    def run_game(self, ip_input, port_input):
+    def run_game(self, ip, port):
         """Запуск игры"""
         # Получаем путь к текущей директории проекта
         project_dir = Path(__file__).parent
@@ -106,8 +106,8 @@ class MainMenu(Entity):
         print(f"Путь к файлу: {file_path}")
 
         # Запускаем скрипт с переданными параметрами
-        print(f"Запуск сервера с параметрами: {ip_input}:{port_input}")
-        subprocess.Popen(["python", str(file_path), ip_input, str(port_input)])
+        print(f"Запуск сервера с параметрами: {ip}:{port}")
+        subprocess.Popen(["python", str(file_path), ip, str(port)])
         time.sleep(5)
 
         @staticmethod
