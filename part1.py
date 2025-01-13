@@ -108,6 +108,7 @@ class MainMenu(Entity):
         # Запускаем скрипт с переданными параметрами
         print(f"Запуск сервера с параметрами: {ip_input}:{port_input}")
         subprocess.Popen(["python", str(file_path), ip_input, str(port_input)])
+        time.sleep(5)
 
         @staticmethod
         def test_connection(ip, port):
