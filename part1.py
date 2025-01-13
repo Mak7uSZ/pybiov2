@@ -79,15 +79,18 @@ class MainMenu(Entity):
         print(f"COnnecting to server {ip}:{port}")
             
             # Проверяем, доступен ли сервер
-        if self.test_connection(ip, port):
-            self.test_connection(ip, port)
-            print("Succesfull connection!")
-            self.run_game(ip, port)
-        else:
-            print(f"Error connection!{e}")
-                # Можно очистить поля ввода или отобразить сообщение о неудаче
+        try:
+            if self.test_connection(ip, port):
+                print("Successful connection!")
+                self.run_game(ip, port)
+            else:
+                print("Error: Connection failed!")
+        except Exception as e:
+            print(f"Error connection: {e}")
+            # Clear the input fields or display an error message
             self.ip_input.text = ''
             self.port_input.text = ''
+
             
 
     def run_game(self, ip, port):
