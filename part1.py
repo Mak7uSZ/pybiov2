@@ -4,6 +4,7 @@ import time
 from ursina import *
 import threading
 from pathlib import Path
+import requests
 import sys
 import os
 
@@ -57,9 +58,11 @@ class MainMenu(Entity):
                 print("server works!")
             else:
                 print("server didnt start!")
-            hostname = socket.gethostname()
-            local_ip = socket.gethostbyname(hostname)
-            ip = local_ip
+
+            # Get the public IP address by querying an external service
+            response = requests.get('https://api.ipify.org?format=json')
+            public_ip = response.json()['ip']
+            ip = public_ip
 
 # Get the public IP address
             print(f"server started on {ip}:{generated_port}")
