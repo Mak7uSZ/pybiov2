@@ -4,6 +4,8 @@ import time
 from ursina import *
 import threading
 from pathlib import Path
+import sys
+import os
 
 class MainMenu(Entity):
     def __init__(self, generated_port_value, ip_var=None, port_var=None, status_var=None):
@@ -69,23 +71,22 @@ class MainMenu(Entity):
         server_thread_instance = threading.Thread(target=server_thread)
         server_thread_instance.start()
         
-    def connect_to_server(self):
-        """Подключение к существующему серверу"""
-        ip_input = self.ip_input.text
-        port_input = self.port_input.text
+def connect_to_server(self):
+    ip_input = self.ip_input.text
+    port_input = self.port_input.text
 
-        print(f"COnnecting to server {ip_input}:{port_input}")
+    print(f"COnnecting to server {ip_input}:{port_input}")
         
         # Проверяем, доступен ли сервер
-        try:
-            self.test_connection(ip_input, port_input)
-            print("Succesfull connection!")
-            self.run_game(ip_input, port_input)
-        except Exception as e:
-            print(f"Error connection!{e}")
+    try:
+        self.test_connection(ip_input, port_input)
+        print("Succesfull connection!")
+        self.run_game(ip_input, port_input)
+    except Exception as e:
+        print(f"Error connection!{e}")
             # Можно очистить поля ввода или отобразить сообщение о неудаче
-            self.ip_input.text = ''
-            self.port_input.text = ''
+        self.ip_input.text = ''
+        self.port_input.text = ''
         
 
 def run_game(self, ip_input, port_input):
