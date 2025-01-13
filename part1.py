@@ -111,14 +111,13 @@ class MainMenu(Entity):
         subprocess.Popen(["python", str(file_path), ip, str(port)])
         time.sleep(5)
 
-        @staticmethod
-        def test_connection(ip, port):
-            """Проверка доступности сервера по IP и порту"""
+    @staticmethod
+    def test_connection(ip, port):        
             try:
                 with socket.create_connection((ip, int(port)), timeout=5):
                     return True
             except:
-                return False
+                    return False
 
 def run_part1(ip_var, port_var, status_var, generated_port_value):
     app = Ursina()
