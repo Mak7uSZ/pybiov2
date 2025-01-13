@@ -71,52 +71,52 @@ class MainMenu(Entity):
         server_thread_instance = threading.Thread(target=server_thread)
         server_thread_instance.start()
         
-def connect_to_server(self):
-    ip_input = self.ip_input.text
-    port_input = self.port_input.text
+    def connect_to_server(self):
+        ip_input = self.ip_input.text
+        port_input = self.port_input.text
 
-    print(f"COnnecting to server {ip_input}:{port_input}")
-        
-        # Проверяем, доступен ли сервер
-    try:
-        self.test_connection(ip_input, port_input)
-        print("Succesfull connection!")
-        self.run_game(ip_input, port_input)
-    except Exception as e:
-        print(f"Error connection!{e}")
-            # Можно очистить поля ввода или отобразить сообщение о неудаче
-        self.ip_input.text = ''
-        self.port_input.text = ''
-        
-
-def run_game(self, ip_input, port_input):
-    """Запуск игры"""
-    # Получаем путь к текущей директории проекта
-    project_dir = Path(__file__).parent
-
-    # Путь к файлу game.py в корне проекта
-    file_path = project_dir / 'game.py'
-
-    # Проверяем, существует ли файл
-    if not file_path.exists():
-        print(f"Ошибка: Файл {file_path} не найден.")
-        return
-
-    # Выводим путь к файлу
-    print(f"Путь к файлу: {file_path}")
-
-    # Запускаем скрипт с переданными параметрами
-    print(f"Запуск сервера с параметрами: {ip_input}:{port_input}")
-    subprocess.Popen(["python", str(file_path), ip_input, str(port_input)])
-
-    @staticmethod
-    def test_connection(ip, port):
-        """Проверка доступности сервера по IP и порту"""
+        print(f"COnnecting to server {ip_input}:{port_input}")
+            
+            # Проверяем, доступен ли сервер
         try:
-            with socket.create_connection((ip, int(port)), timeout=5):
-                return True
-        except:
-            return False
+            self.test_connection(ip_input, port_input)
+            print("Succesfull connection!")
+            self.run_game(ip_input, port_input)
+        except Exception as e:
+            print(f"Error connection!{e}")
+                # Можно очистить поля ввода или отобразить сообщение о неудаче
+            self.ip_input.text = ''
+            self.port_input.text = ''
+            
+
+    def run_game(self, ip_input, port_input):
+        """Запуск игры"""
+        # Получаем путь к текущей директории проекта
+        project_dir = Path(__file__).parent
+
+        # Путь к файлу game.py в корне проекта
+        file_path = project_dir / 'game.py'
+
+        # Проверяем, существует ли файл
+        if not file_path.exists():
+            print(f"Ошибка: Файл {file_path} не найден.")
+            return
+
+        # Выводим путь к файлу
+        print(f"Путь к файлу: {file_path}")
+
+        # Запускаем скрипт с переданными параметрами
+        print(f"Запуск сервера с параметрами: {ip_input}:{port_input}")
+        subprocess.Popen(["python", str(file_path), ip_input, str(port_input)])
+
+        @staticmethod
+        def test_connection(ip, port):
+            """Проверка доступности сервера по IP и порту"""
+            try:
+                with socket.create_connection((ip, int(port)), timeout=5):
+                    return True
+            except:
+                return False
 
 def run_part1(ip_var, port_var, status_var, generated_port_value):
     app = Ursina()
