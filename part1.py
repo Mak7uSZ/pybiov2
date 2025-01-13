@@ -3,6 +3,8 @@ import socket
 import time
 from ursina import *
 import threading
+import sys
+import os
 class MainMenu(Entity):
     def __init__(self, generated_port_value, ip_var=None, port_var=None, status_var=None):
         super().__init__()
@@ -75,20 +77,30 @@ class MainMenu(Entity):
         print(f"COnnecting to server {ip_input}:{port_input}")
         
         # Проверяем, доступен ли сервер
-        if self.test_connection(ip_input, port_input):
+        try:
+            self.test_connection(ip_input, port_input)
             print("Succesfull connection!")
             self.run_game(ip_input, port_input)
-        else:
-            print("Error connection!")
+        except Exception as e:
+            print(f"Error connection!{e}")
             # Можно очистить поля ввода или отобразить сообщение о неудаче
             self.ip_input.text = ''
             self.port_input.text = ''
         
     def run_game(self, ip_input, port_input):
         """Запуск игры"""
+
+# Получаем путь к текущей директории проекта
+        project_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Создаем путь к файлу внутри проекта
+        file_path = os.path.join(project_dir, 'subfolder', 'game.py')
+
+        print(file_path)
+
         # Вы можете запускать свою игру, передавая параметры
         print(f"Starting server with: {ip_input}:{port_input}")
-        subprocess.Popen(["python", "game.py", ip_input, str(port_input)])
+        subprocess.Popen(["python", file_path, ip_input, str(port_input)])
     
     @staticmethod
     def test_connection(ip, port):
