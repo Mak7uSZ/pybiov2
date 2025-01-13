@@ -20,6 +20,7 @@ def check_server(local_ip, generated_port):
     """Check if the server is running and can accept connections"""
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind((local_ip, generated_port))
         server_socket.listen(5)
         client_socket, client_address = server_socket.accept()
