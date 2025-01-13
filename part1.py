@@ -3,8 +3,8 @@ import socket
 import time
 from ursina import *
 import threading
-import sys
-import os
+from pathlib import Path
+
 class MainMenu(Entity):
     def __init__(self, generated_port_value, ip_var=None, port_var=None, status_var=None):
         super().__init__()
@@ -87,21 +87,27 @@ class MainMenu(Entity):
             self.ip_input.text = ''
             self.port_input.text = ''
         
-    def run_game(self, ip_input, port_input):
-        """Запуск игры"""
 
-# Получаем путь к текущей директории проекта
-        project_dir = os.path.dirname(os.path.abspath(__file__))
+def run_game(self, ip_input, port_input):
+    """Запуск игры"""
+    # Получаем путь к текущей директории проекта
+    project_dir = Path(__file__).parent
 
-# Создаем путь к файлу внутри проекта
-        file_path = os.path.join(project_dir, 'subfolder', 'game.py')
+    # Путь к файлу game.py в корне проекта
+    file_path = project_dir / 'game.py'
 
-        print(file_path)
+    # Проверяем, существует ли файл
+    if not file_path.exists():
+        print(f"Ошибка: Файл {file_path} не найден.")
+        return
 
-        # Вы можете запускать свою игру, передавая параметры
-        print(f"Starting server with: {ip_input}:{port_input}")
-        subprocess.Popen(["python", file_path, ip_input, str(port_input)])
-    
+    # Выводим путь к файлу
+    print(f"Путь к файлу: {file_path}")
+
+    # Запускаем скрипт с переданными параметрами
+    print(f"Запуск сервера с параметрами: {ip_input}:{port_input}")
+    subprocess.Popen(["python", str(file_path), ip_input, str(port_input)])
+
     @staticmethod
     def test_connection(ip, port):
         """Проверка доступности сервера по IP и порту"""
