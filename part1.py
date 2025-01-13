@@ -66,6 +66,7 @@ class MainMenu(Entity):
 
             # Запускаем game.py с IP и случайным портом
             self.run_game(ip, generated_port)
+            time.sleep(5)
 
         # Создаем и запускаем отдельный поток для сервера
         server_thread_instance = threading.Thread(target=server_thread)
