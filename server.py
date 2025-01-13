@@ -11,9 +11,8 @@ import requests
 generated_port = int(sys.argv[1])
 print(f"Generated port: {generated_port}")
 
-            # Get the public IP address by querying an external service
-response = requests.get('https://api.ipify.org?format=json')
-local_ip = response.json()['ip']
+hostname = socket.gethostname()
+local_ip = socket.gethostbyname(hostname) 
 
 # Check server function
 def check_server(local_ip, generated_port):

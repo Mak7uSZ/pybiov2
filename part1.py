@@ -60,9 +60,9 @@ class MainMenu(Entity):
                 print("server didnt start!")
 
             # Get the public IP address by querying an external service
-            response = requests.get('https://api.ipify.org?format=json')
-            public_ip = response.json()['ip']
-            ip = public_ip
+            hostname = socket.gethostname()
+            local_ip = socket.gethostbyname(hostname) 
+            ip = local_ip
 
 # Get the public IP address
             print(f"server started on {ip}:{generated_port}")
