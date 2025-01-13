@@ -252,7 +252,7 @@ editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, color="27DCA3", origin_y=-.9, speed=20, collider='box')
 
 player._collider = BoxCollider(player, (0,0,0), (0.5, 1, 0.5))
-player.position = Vec3(0, 60, 0)
+player.position = Vec3(0, 200, 0)
 camera.fov = 90
 gun = Entity(model='Models/hand.obj', parent=camera, position=(.5,-.25,1.8), scale=(.3,.2,.2), origin_z=-.5, texture="Textures/handtexture.png")
 gun.world_rotation_y=70
