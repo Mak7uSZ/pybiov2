@@ -27,7 +27,7 @@ from part1 import run_part1
 from ursina import *
 from perlin_noise import PerlinNoise
 import random
-
+from threading import Thread, Event
 import time
 from PIL import Image, ImageEnhance
 from ursina import *
@@ -59,21 +59,67 @@ server_port = int(port)
 
 
 time.sleep(5)
+reconnect_interval = 3  # Seconds between reconnect attempts
+heartbeat_interval = 5  # Seconds between heartbeat checks
+running = Event()
+running.set()  # Set the event to keep threads running
 
-while True:
+# Connection objects
+client_socket = None
+your_client_id = None
+
+def maintain_connection():
+    global client_socket, your_client_id
+    
+    while running.is_set():
         try:
-            # Создаем сокет для подключения
+            # Establish new connection
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.settimeout(1)  # Устанавливаем таймаут 1 секунду
+            client_socket.settimeout(5)
             client_socket.connect((server_ip, server_port))
-            print(f"Успешно подключились к серверу на {ip}:{port}")
+            
+            # Get client ID from server
             data = client_socket.recv(1024)
-            your_client_id = data.decode('utf-8').strip()
-            print(f"[INFO] Received client ID: {your_client_id}")
-            break  # Если подключение успешно, выходим из цикла
-        except (socket.timeout, ConnectionRefusedError):
-            print(f"Сервер еще не готов, повторная попытка через 1 секунду...")
-            time.sleep(1)  # Пауза перед повторной попыткой
+            your_client_id = json.loads(data.decode('utf-8'))
+            print(f"Connected to server. ID: {your_client_id}")
+            
+            # Start heartbeat monitoring
+            Thread(target=heartbeat_check, daemon=True).start()
+            
+            # Keep connection alive
+            while running.is_set():
+                try:
+                    # Send empty data just to check connection
+                    client_socket.sendall(b'')
+                    time.sleep(0.1)
+                except (ConnectionResetError, BrokenPipeError, socket.timeout):
+                    print("Connection lost. Reconnecting...")
+                    break
+                
+        except (ConnectionRefusedError, socket.timeout, OSError) as e:
+            print(f"Connection error: {str(e)}. Retrying in {reconnect_interval}s...")
+            time.sleep(reconnect_interval)
+        
+        finally:
+            if client_socket:
+                client_socket.close()
+                client_socket = None
+                your_client_id = None
+
+def heartbeat_check():
+    while running.is_set() and client_socket:
+        try:
+            # Send heartbeat signal
+            client_socket.sendall(json.dumps({"heartbeat": True}).encode('utf-8'))
+            time.sleep(heartbeat_interval)
+        except (ConnectionResetError, BrokenPipeError, socket.timeout):
+            print("Heartbeat failed. Triggering reconnection...")
+            break
+
+# Start connection management thread
+connection_thread = Thread(target=maintain_connection, daemon=True)
+connection_thread.start()
+
 
 # Receive client ID
 app = Ursina()
@@ -193,7 +239,7 @@ level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
 
 amp = 3
 freq = 24
-width = 5
+width = 2
 
 for x in range(1, width):
     for z in range(1, width):
