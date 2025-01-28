@@ -78,8 +78,17 @@ def maintain_connection():
             client_socket.settimeout(5)
             client_socket.connect((server_ip, server_port))
             
-            # Get client ID from server
-            data = client_socket.recv(1024)
+            # Get client ID from server (with message boundary)
+            data = b''
+            while True:
+                chunk = client_socket.recv(1)
+                if not chunk or chunk == b'\n':
+                    break
+                data += chunk
+                
+            if not data:
+                raise ValueError("Empty response from server")
+                
             your_client_id = json.loads(data.decode('utf-8'))
             print(f"Connected to server. ID: {your_client_id}")
             
@@ -89,14 +98,14 @@ def maintain_connection():
             # Keep connection alive
             while running.is_set():
                 try:
-                    # Send empty data just to check connection
-                    client_socket.sendall(b'')
+                    # Check connection by sending empty byte
+                    client_socket.sendall(b'\x00')
                     time.sleep(0.1)
                 except (ConnectionResetError, BrokenPipeError, socket.timeout):
                     print("Connection lost. Reconnecting...")
                     break
                 
-        except (ConnectionRefusedError, socket.timeout, OSError) as e:
+        except (Exception, ConnectionRefusedError, socket.timeout, OSError) as e:
             print(f"Connection error: {str(e)}. Retrying in {reconnect_interval}s...")
             time.sleep(reconnect_interval)
         
@@ -105,7 +114,6 @@ def maintain_connection():
                 client_socket.close()
                 client_socket = None
                 your_client_id = None
-
 def heartbeat_check():
     while running.is_set() and client_socket:
         try:
@@ -126,8 +134,6 @@ app = Ursina()
 
 # Initialize Ursina
 # Predefined models for other players
-data = client_socket.recv(1024)
-your_client_id = data.decode('utf-8').strip()
 print(f"[INFO] Received client ID: {your_client_id}")
 
 # Initialize Ursina
@@ -171,7 +177,7 @@ def receive_data():
 
                 elif message['type'] == 'time':
                     server_time = message['data']
-                   # print(f"[DEBUG] Server time sync: {server_time}")
+                    print(f"[DEBUG] Server time sync: {server_time}")
 
         except Exception as e:
             print(f"[ERROR] Data reception failed: {e}")
@@ -189,13 +195,13 @@ def update_player_positions():
                     available_model.visible = True
                     available_model.position = Vec3(position['x'], position['y'], position['z'])
                     assigned_clients[client_id] = available_model
-                    #print(f"[DEBUG] Assigned model to client {client_id}")
+                    print(f"[DEBUG] Assigned model to client {client_id}")
                 else:
                     print(f"[ERROR] No available model for client {client_id}")
             else:
                 # Update the assigned model's position
                 assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
-                #print(f"[DEBUG] Updated position for client {client_id} to {position}")
+                print(f"[DEBUG] Updated position for client {client_id} to {position}")
 
         # Return unassigned models to their initial positions
         for client_id in list(assigned_clients.keys()):
@@ -203,7 +209,7 @@ def update_player_positions():
                 model = assigned_clients.pop(client_id)
                 model.position = Vec3(0, 0, 0)
                 model.visible = False
-                #print(f"[DEBUG] Returned model for client {client_id} to initial position.")
+                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
 
         time.sleep(0.1)  # Задержка перед следующим обновлением
 

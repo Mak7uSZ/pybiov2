@@ -47,7 +47,7 @@ def handle_client(client_socket, client_address):
     client_id = str(uuid.uuid4())
     clients[client_socket] = client_id
     print(f"[INFO] New connection from {client_address}, assigned ID: {client_id}")
-    client_socket.send(json.dumps(client_id).encode('utf-8'))
+    client_socket.send(json.dumps(client_id).encode('utf-8') + b'\n')
 
     while True:
         try:
@@ -55,7 +55,7 @@ def handle_client(client_socket, client_address):
             if data:
                 position_data = json.loads(data.decode('utf-8'))
                 clients_positions[client_id] = position_data
-                #print(f"[DEBUG] Received position from {client_id}: {position_data}")
+                print(f"[DEBUG] Received position from {client_id}: {position_data}")
             else:
                 break
         except Exception as e:
