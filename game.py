@@ -171,7 +171,7 @@ def receive_data():
 
                 elif message['type'] == 'time':
                     server_time = message['data']
-                    print(f"[DEBUG] Server time sync: {server_time}")
+                    # print(f"[DEBUG] Server time sync: {server_time}")
 
         except Exception as e:
             print(f"[ERROR] Data reception failed: {e}")
@@ -189,13 +189,13 @@ def update_player_positions():
                     available_model.visible = True
                     available_model.position = Vec3(position['x'], position['y'], position['z'])
                     assigned_clients[client_id] = available_model
-                    print(f"[DEBUG] Assigned model to client {client_id}")
+                    # print(f"[DEBUG] Assigned model to client {client_id}")
                 else:
                     print(f"[ERROR] No available model for client {client_id}")
             else:
                 # Update the assigned model's position
                 assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
-                print(f"[DEBUG] Updated position for client {client_id} to {position}")
+                # print(f"[DEBUG] Updated position for client {client_id} to {position}")
 
         # Return unassigned models to their initial positions
         for client_id in list(assigned_clients.keys()):
@@ -203,7 +203,7 @@ def update_player_positions():
                 model = assigned_clients.pop(client_id)
                 model.position = Vec3(0, 0, 0)
                 model.visible = False
-                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
+                # print(f"[DEBUG] Returned model for client {client_id} to initial position.")
 
         time.sleep(0.1)  # Задержка перед следующим обновлением
 
@@ -215,7 +215,7 @@ def send_position_data():
         try:
             player_position = {'x': player.x, 'y': player.y, 'z': player.z}
             client_socket.send(json.dumps(player_position).encode('utf-8'))
-            print(f"[INFO] Sent position data: {player_position}")
+            # print(f"[INFO] Sent position data: {player_position}")
         except Exception as e:
             print(f"[ERROR] Error sending position data: {e}")
         time.sleep(0.1)
@@ -239,7 +239,7 @@ level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
 
 amp = 3
 freq = 24
-width = 2
+width = 5
 
 for x in range(1, width):
     for z in range(1, width):
