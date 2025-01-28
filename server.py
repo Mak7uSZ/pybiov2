@@ -71,12 +71,12 @@ def handle_client(client_socket, client_address):
 def broadcast_positions():
     while True:
         if clients_positions:
-            positions_message = json.dumps({"type": "positions", "data": clients_positions})
+            positions_message = json.dumps({"type": "positions", "data": clients_positions}) + '\n'  # Add delimiter
             for client_socket in list(clients.keys()):
                 try:
                     client_socket.sendall(positions_message.encode('utf-8'))
                 except Exception as e:
-                    print(f"[ERROR] Error sending data to client {clients[client_socket]}: {e}")
+                    print(f"[ERROR] Error sending positions: {e}")
                     del clients[client_socket]
         time.sleep(0.1)
 
@@ -100,17 +100,17 @@ def broadcast_tijd():
             tijd_message = json.dumps({
                 "type": "time",
                 "data": servertijd,
-                "checksum": hash(servertijd)  # Add simple validation
-            })
+                "checksum": hash(servertijd)
+            }) + '\n'  # Add delimiter
             for client_socket in list(clients.keys()):
-                    try:
-                        client_socket.sendall(tijd_message.encode('utf-8'))
-                    except Exception as e:
-                        print(f"[ERROR] Error sending tijd_data to client {clients[client_socket]}: {e}")
-                        del clients[client_socket]
+                try:
+                    client_socket.sendall(tijd_message.encode('utf-8'))
+                except Exception as e:
+                    print(f"[ERROR] Error sending time: {e}")
+                    del clients[client_socket]
+            time.sleep(0.1)
         except Exception as e:
-            print(f"[ERROR] Error in broadcast loop: {e}")
-        time.sleep(0.1)
+            print(f"[ERROR] Time broadcast error: {e}")
 
 # Print server status in a separate thread
 def print_server_status(local_ip, generated_port):

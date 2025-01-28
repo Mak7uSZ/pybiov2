@@ -70,43 +70,29 @@ your_client_id = None
 
 def maintain_connection():
     global client_socket, your_client_id
-    
+    buffer = ""
+
     while running.is_set():
         try:
-            # Establish new connection
+            # Establish connection
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.settimeout(5)
             client_socket.connect((server_ip, server_port))
-            
-            # Get client ID from server (with message boundary)
-            data = b''
-            while True:
-                chunk = client_socket.recv(1)
-                if not chunk or chunk == b'\n':
-                    break
-                data += chunk
-                
-            if not data:
-                raise ValueError("Empty response from server")
-                
-            your_client_id = json.loads(data.decode('utf-8'))
-            print(f"Connected to server. ID: {your_client_id}")
-            
-            # Start heartbeat monitoring
-            Thread(target=heartbeat_check, daemon=True).start()
-            
-            # Keep connection alive
+
+            # Get client ID
+            data = client_socket.recv(1024)
+            your_client_id = json.loads(data.decode('utf-8').strip())
+            print(f"Connected! ID: {your_client_id}")
+
+            # Start data reception thread
+            Thread(target=receive_data, args=(client_socket,), daemon=True).start()
+
+            # Maintain connection
             while running.is_set():
-                try:
-                    # Check connection by sending empty byte
-                    client_socket.sendall(b'\x00')
-                    time.sleep(0.1)
-                except (ConnectionResetError, BrokenPipeError, socket.timeout):
-                    print("Connection lost. Reconnecting...")
-                    break
-                
-        except (Exception, ConnectionRefusedError, socket.timeout, OSError) as e:
-            print(f"Connection error: {str(e)}. Retrying in {reconnect_interval}s...")
+                time.sleep(1)  # Just keep the connection alive
+
+        except Exception as e:
+            print(f"Connection error: {str(e)}. Retrying...")
             time.sleep(reconnect_interval)
         
         finally:
@@ -114,6 +100,7 @@ def maintain_connection():
                 client_socket.close()
                 client_socket = None
                 your_client_id = None
+
 def heartbeat_check():
     while running.is_set() and client_socket:
         try:
