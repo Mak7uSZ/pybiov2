@@ -353,7 +353,7 @@ level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
 
 amp = 3
 freq = 24
-width = 5
+width = 10
 
 for x in range(1, width):
     for z in range(1, width):
