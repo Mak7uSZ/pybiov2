@@ -376,16 +376,11 @@ def skyboxManager():
         time.sleep(1)
         if localtime > 0 and localtime < 60:
             skybox.texture = skybox_images[0]
-            text_entity2.world_position = (-5, -5)
-            text_entity2.world_scale = (48, 48) 
         if localtime > 59 and localtime < 120:
             skybox.texture = skybox_images[1]
         if localtime > 119 and localtime < 180:
             skybox.texture = skybox_images[2]
         if localtime > 179 and localtime < 240:
-            text_entity2.text = f" " 
-            text_entity2.world_position = (-5, -5)
-            text_entity2.world_scale = (48, 48)
             skybox.texture = skybox_images[3]
         if localtime > 239:
             localtime = 0
@@ -394,7 +389,6 @@ def skyboxManager():
                 sleeptex.scale = (2,2)
                 time.sleep(2)
                 sleeptex.scale = (0,0)
-                text_entity2.world_scale = (0,0)
                 localtime = 70
                 food -= 2
             
