@@ -58,63 +58,184 @@ server_ip = ip
 server_port = int(port)
 
 
-time.sleep(5)
-reconnect_interval = 3  # Seconds between reconnect attempts
-heartbeat_interval = 5  # Seconds between heartbeat checks
-running = Event()
-running.set()  # Set the event to keep threads running
+import json
+import time
+import socket
+from threading import Thread
 
-# Connection objects
+# Global variables
 client_socket = None
 your_client_id = None
+server_time = 0
+last_position_update = 0
+filtered_positions = {}
+assigned_clients = {}
+players = {}  # Assuming this is pre-initialized
+player = None  # Assuming this is your player object
 
-def maintain_connection():
-    global client_socket, your_client_id
+# Connection parameters      # Replace with actual port
+reconnect_interval = 5        # Seconds between reconnect attempts
+
+# Function to validate incoming data
+def validate_data(message):
+    """Validate the structure and content of the received message."""
+    if not isinstance(message, dict):
+        return False
+    
+    if message.get('type') == 'positions':
+        if not isinstance(message.get('data'), dict):
+            return False
+        # Additional validation for position data if needed
+        return True
+    
+    elif message.get('type') == 'time':
+        if not isinstance(message.get('data'), int):
+            return False
+        return True
+    
+    return False
+
+# Function to handle data reception
+def receive_data():
+    global filtered_positions, server_time, last_position_update, client_socket
     buffer = ""
-
-    while running.is_set():
+    
+    while True:
         try:
-            # Establish connection
+            if not client_socket:
+                time.sleep(1)
+                continue
+            
+            # Receive data in chunks
+            chunk = client_socket.recv(4096).decode('utf-8')
+            if not chunk:
+                print("[ERROR] Connection closed by server. Reconnecting...")
+                reconnect()
+                continue
+            
+            buffer += chunk
+            
+            # Process complete messages (assuming messages are separated by newlines)
+            while '\n' in buffer:
+                message_str, buffer = buffer.split('\n', 1)
+                try:
+                    message = json.loads(message_str)
+                    if not validate_data(message):
+                        print("[ERROR] Invalid data format. Discarding message.")
+                        continue
+                    
+                    # Process valid data
+                    if message['type'] == 'positions':
+                        if server_time > last_position_update:
+                            filtered_positions = filter_own_position(your_client_id, message['data'])
+                            last_position_update = server_time
+                            print(f"[TIME {server_time}] Positions updated")
+                    
+                    elif message['type'] == 'time':
+                        server_time = message['data']
+                        print(f"[DEBUG] Server time sync: {server_time}")
+                
+                except json.JSONDecodeError:
+                    print("[ERROR] Invalid JSON. Discarding message.")
+                    continue
+                except Exception as e:
+                    print(f"[ERROR] Data processing failed: {e}")
+                    continue
+        
+        except (ConnectionResetError, socket.timeout, OSError) as e:
+            print(f"[ERROR] Connection error: {e}. Reconnecting...")
+            reconnect()
+            time.sleep(reconnect_interval)
+        except Exception as e:
+            print(f"[ERROR] Unexpected error: {e}")
+            time.sleep(1)
+
+# Function to reconnect to the server
+def reconnect():
+    global client_socket, your_client_id
+    if client_socket:
+        client_socket.close()
+        client_socket = None
+    your_client_id = None
+    connect_to_server()
+
+# Function to establish a connection to the server
+def connect_to_server():
+    global client_socket, your_client_id
+    while True:
+        try:
+            print("Attempting to connect to server...")
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.settimeout(5)
             client_socket.connect((server_ip, server_port))
-
-            # Get client ID
-            data = client_socket.recv(1024)
-            your_client_id = json.loads(data.decode('utf-8').strip())
-            print(f"Connected! ID: {your_client_id}")
-
-            # Start data reception thread
-            Thread(target=receive_data, args=(client_socket,), daemon=True).start()
-
-            # Maintain connection
-            while running.is_set():
-                time.sleep(1)  # Just keep the connection alive
-
+            
+            # Get client ID from server
+            data = client_socket.recv(1024).decode('utf-8')
+            your_client_id = json.loads(data)
+            print(f"Connected! Assigned ID: {your_client_id}")
+            return True
         except Exception as e:
-            print(f"Connection error: {str(e)}. Retrying...")
+            print(f"Connection failed: {str(e)}. Retrying in {reconnect_interval}s...")
             time.sleep(reconnect_interval)
-        
-        finally:
             if client_socket:
                 client_socket.close()
                 client_socket = None
-                your_client_id = None
 
-def heartbeat_check():
-    while running.is_set() and client_socket:
+# Function to send player position to the server
+def send_position_data():
+    while True:
         try:
-            # Send heartbeat signal
-            client_socket.sendall(json.dumps({"heartbeat": True}).encode('utf-8'))
-            time.sleep(heartbeat_interval)
-        except (ConnectionResetError, BrokenPipeError, socket.timeout):
-            print("Heartbeat failed. Triggering reconnection...")
-            break
+            if client_socket and your_client_id:
+                player_position = {'x': player.x, 'y': player.y, 'z': player.z}
+                client_socket.send(json.dumps(player_position).encode('utf-8') + b'\n')
+                print(f"[INFO] Sent position data: {player_position}")
+            else:
+                print("[WARNING] Not connected to server. Skipping position update.")
+        except Exception as e:
+            print(f"[ERROR] Error sending position data: {e}")
+            reconnect()
+        time.sleep(0.1)
 
-# Start connection management thread
-connection_thread = Thread(target=maintain_connection, daemon=True)
-connection_thread.start()
+# Function to update player positions
+def update_player_positions():
+    global filtered_positions, players, assigned_clients
+    while True:
+        if not filtered_positions:
+            time.sleep(0.1)
+            continue
+        
+        # Assign or update models for connected clients
+        for client_id, position in filtered_positions.items():
+            if client_id not in assigned_clients:
+                # Assign an available model
+                available_model = next((p for p_id, p in players.items() if p_id.isdigit() and not p.visible), None)
+                if available_model:
+                    available_model.visible = True
+                    available_model.position = Vec3(position['x'], position['y'], position['z'])
+                    assigned_clients[client_id] = available_model
+                    print(f"[DEBUG] Assigned model to client {client_id}")
+                else:
+                    print(f"[ERROR] No available model for client {client_id}")
+            else:
+                # Update the assigned model's position
+                assigned_clients[client_id].position = Vec3(position['x'], position['y'], position['z'])
+                print(f"[DEBUG] Updated position for client {client_id} to {position}")
 
+        # Return unassigned models to their initial positions
+        for client_id in list(assigned_clients.keys()):
+            if client_id not in filtered_positions:
+                model = assigned_clients.pop(client_id)
+                model.position = Vec3(0, 0, 0)
+                model.visible = False
+                print(f"[DEBUG] Returned model for client {client_id} to initial position.")
+
+        time.sleep(0.1)
+
+# Start threads
+connect_to_server()
+Thread(target=receive_data, daemon=True).start()
+Thread(target=update_player_positions, daemon=True).start()
+Thread(target=send_position_data, daemon=True).start()
 
 # Receive client ID
 app = Ursina()
