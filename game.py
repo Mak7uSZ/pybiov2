@@ -348,34 +348,48 @@ sun.look_at(Vec3(-1,-1,-10))
 # 4096 x 1024 JPG
 # sky = Sky(texture="Textures/skybox.jpg")
 
-noise = PerlinNoise(octaves=3, seed=random.randint(0, 1000))
-level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
+# Precompute noise grid
+import random
+from perlin_noise import PerlinNoise
+from ursina import Entity, Mesh, color
 
+# Settings for Perlin Noise
 amp = 3
 freq = 24
-width = 10
+width = 10  # Size of the terrain
+octaves = 3
 
-for x in range(1, width):
-    for z in range(1, width):
-        # add two triangles for each new point
-        y00 = noise([x/freq, z/freq]) * amp
-        y10 = noise([(x-1)/freq, z/freq]) * amp
-        y11 = noise([(x-1)/freq, (z-1)/freq]) * amp
-        y01 = noise([x/freq, (z-1)/freq]) * amp
-        level_parent.model.vertices += (
-            # first triangle
-            (x, y00, z),
-            (x-1, y10, z),
-            (x-1, y11, z-1),
-            # second triangle
-            (x, y00, z),
-            (x-1, y11, z-1),
-            (x, y01, z-1)
-        )
+# Create a PerlinNoise instance
+noise = PerlinNoise(octaves=octaves, seed=random.randint(0, 1000))
 
-level_parent.model.generate()
-level_parent.model.project_uvs() # for texture
-level_parent.model.generate_normals() # for lighting
+# Initialize the level entity
+level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
+
+# Loop through each point and generate the triangles
+def generate_chunk(x_offset, z_offset, chunk_size=10):
+    for x in range(x_offset, x_offset + chunk_size):
+        for z in range(z_offset, z_offset + chunk_size):
+            # Generate the terrain for this chunk
+            y00 = noise([x / freq, z / freq]) * amp
+            y10 = noise([(x - 1) / freq, z / freq]) * amp
+            y11 = noise([(x - 1) / freq, (z - 1) / freq]) * amp
+            y01 = noise([x / freq, (z - 1) / freq]) * amp
+            
+            # Add triangles
+            level_parent.model.vertices += (
+                (x, y00, z), (x - 1, y10, z), (x - 1, y11, z - 1),
+                (x, y00, z), (x - 1, y11, z - 1), (x, y01, z - 1)
+            )
+
+    level_parent.model.generate()
+    level_parent.model.project_uvs()
+    level_parent.model.generate_normals()
+
+# Generate terrain in chunks
+generate_chunk(0, 0, chunk_size=10)
+
+
+
 level_parent.collider = 'mesh'
 level_parent.world_scale = 50  # for collision
 #ground = Entity(model='Models/Newterrain.obj', collider='mesh', scale=4, texture='Textures/TerrainTexture.png')
