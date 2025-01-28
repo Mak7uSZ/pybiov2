@@ -239,7 +239,7 @@ level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
 
 amp = 3
 freq = 24
-width = 5
+width = 4
 
 for x in range(1, width):
     for z in range(1, width):
@@ -269,7 +269,7 @@ level_parent.world_scale = 50  # for collision
 water = Entity(model='Models/Water.obj', scale=4, texture='Textures/Daunload.jpg', texture_scale=(128,128), collider='box')
 # water.collision = True
 human_cacher = Entity(model="Models/Human catcher.obj", collider='mesh', scale=4, texture_scale=(128,128))
-human_cacher.position_y = 100
+human_cacher.position_y = 200
 
 infiniter = Mesh(vertices=[[0,0,0], [10,0,0], [0,0,10], [10,0,10]],
                  triangles=[[0,1,2]])
@@ -279,10 +279,15 @@ ground = Entity(model=infiniter)
 
 editor_camera = EditorCamera(enabled=False, ignore_paused=True)
 player = FirstPersonController(model='Models/Player.obj', scale=(1,1,1), z=-10, color="27DCA3", origin_y=-.9, speed=20, collider='box')
+def update():
+    if player.y < 100:
+        player.gravity = -1
+    if player.y > 300:
+        player.gravity = 0.005
 
 player._collider = BoxCollider(player, (0,0,0), (0.5, 1, 0.5))
 #spawn
-player.position = Vec3(0, 500, 0)
+player.position = Vec3(0, 100, 0)
 camera.fov = 90
 gun = Entity(model='Models/hand.obj', parent=camera, position=(.5,-.25,1.8), scale=(.3,.2,.2), origin_z=-.5, texture="Textures/handtexture.png")
 gun.world_rotation_y=70
