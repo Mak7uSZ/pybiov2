@@ -324,7 +324,6 @@ kwit = False
 localtime = 0
 food = 5
 skybox = Sky()
-text_entity2 = Text("sigma", world_position = (-20, -20))
 def skyboxManager():
     global food
     #text_entity2.text = Text("g", world_scale=48)
