@@ -55,7 +55,7 @@ def handle_client(client_socket, client_address):
             if data:
                 position_data = json.loads(data.decode('utf-8'))
                 clients_positions[client_id] = position_data
-                # print(f"[DEBUG] Received position from {client_id}: {position_data}")
+                #print(f"[DEBUG] Received position from {client_id}: {position_data}")
             else:
                 break
         except Exception as e:
@@ -128,7 +128,7 @@ Thread(target=broadcast_tijd, daemon=True).start()
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((local_ip, generated_port))
 server_socket.listen(5)
-# print(f"Server is listening on {local_ip}:{generated_port}...")
+print(f"Server is listening on {local_ip}:{generated_port}...")
 
 clients = {}  # Mapping client_socket -> client_id
 clients_positions = {}
