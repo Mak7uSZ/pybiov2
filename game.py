@@ -80,6 +80,12 @@ app = Ursina()
 
 # Initialize Ursina
 # Predefined models for other players
+data = client_socket.recv(1024)
+your_client_id = data.decode('utf-8').strip()
+print(f"[INFO] Received client ID: {your_client_id}")
+
+# Initialize Ursina
+# Predefined models for other players
 max_players = 10
 initial_positions = [Vec3(0, 0, 0) for _ in range(max_players)]
 players = {str(i): Entity(
@@ -99,52 +105,30 @@ def filter_own_position(client_id, positions_data):
 
 # Receive positions from server
 filtered_positions = {}
-def receive_positions():
-    global filtered_positions
-    buffer = ""  # To handle incomplete messages
+server_time = 0
+last_position_update = 0  # To track timing of position updates
+def receive_data():
+    global filtered_positions, server_time, last_position_update
     while True:
         try:
             data = client_socket.recv(4096)
             if data:
-                # Decode and add to buffer
-                buffer += data.decode('utf-8')
+                message = json.loads(data.decode('utf-8'))
+                
+                if message['type'] == 'positions':
+                    # Only process positions if time is synchronized
+                    if server_time > last_position_update:
+                        positions_data = message['data']
+                        filtered_positions = filter_own_position(your_client_id, positions_data)
+                        last_position_update = server_time
+                        print(f"[TIME {server_time}] Positions updated")
 
-                # Process complete messages in buffer
-                while "\n" in buffer:  # Assuming newline is used as a delimiter
-                    message, buffer = buffer.split("\n", 1)
-                    try:
-                        parsed_message = json.loads(message)
-                        
-                        # Check if message type is "positions"
-                        if parsed_message.get("type") == "positions":
-                            positions_data = parsed_message.get("data")
-                            if isinstance(positions_data, dict):
-                                filtered_positions = filter_own_position(your_client_id, positions_data)
-                                print(f"[DEBUG] Filtered positions: {filtered_positions}")
-                            else:
-                                print(f"[ERROR] Positions data is not a valid dictionary: {positions_data}")
-                        else:
-                            print(f"[INFO] Received non-positions message: {parsed_message}")
-                    except json.JSONDecodeError:
-                        print(f"[ERROR] Failed to decode JSON message: {message}")
+                elif message['type'] == 'time':
+                    server_time = message['data']
+                    print(f"[DEBUG] Server time sync: {server_time}")
+
         except Exception as e:
-            print(f"[ERROR] Error receiving data (positions): {e}")
-
-
-
-def receive_tijd():
-    global servertijd
-    while True:
-        try:
-            # Receive data from the socket
-            tijd_data = client_socket.recv(4096)
-            if tijd_data:
-                # Decode and parse JSON from the received data
-                servertijd = json.loads(tijd_data.decode('utf-8'))
-                print(f"[DEBUG] received tijd: {servertijd}")
-        except Exception as e:
-            print(f"[ERROR] Error receiving data(tijd): {e}")
-
+            print(f"[ERROR] Data reception failed: {e}")
 
 # Update player positions
 def update_player_positions():
@@ -191,8 +175,7 @@ def send_position_data():
         time.sleep(0.1)
 
 # Start threads
-Thread(target=receive_tijd, daemon=True).start()
-Thread(target=receive_positions, daemon=True).start()
+Thread(target=receive_data, daemon=True).start()
 Thread(target=update_player_positions, daemon=True).start()
 Thread(target=send_position_data, daemon=True).start()
 
@@ -210,7 +193,7 @@ level_parent = Entity(model=Mesh(vertices=[], uvs=[]), color=color.white)
 
 amp = 3
 freq = 24
-width = 2
+width = 5
 
 for x in range(1, width):
     for z in range(1, width):

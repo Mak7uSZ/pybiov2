@@ -81,23 +81,28 @@ def broadcast_positions():
         time.sleep(0.1)
 
 # Update server time
+start_time = time.time()
 servertijd = 0
 
 def update_servertijd():
-    global servertijd
+    global servertijd, start_time
     while True:
-        servertijd += 1
-        if servertijd > 239:
-            servertijd = 0
-        time.sleep(1)
+        # Calculate elapsed time since server "start"
+        elapsed_time = int(time.time() - start_time)
+        # Keep servertijd in the 0-239 range
+        servertijd = elapsed_time % 240
+        time.sleep(0.1)  # Frequent updates for precision
 
 # Broadcast server time to all clients
 def broadcast_tijd():
     while True:
         try:
-            if servertijd is not None:
-                tijd_message = json.dumps({"type": "time", "data": servertijd})
-                for client_socket in list(clients.keys()):
+            tijd_message = json.dumps({
+                "type": "time",
+                "data": servertijd,
+                "checksum": hash(servertijd)  # Add simple validation
+            })
+            for client_socket in list(clients.keys()):
                     try:
                         client_socket.sendall(tijd_message.encode('utf-8'))
                     except Exception as e:
