@@ -387,7 +387,7 @@ def generate_chunk(x_offset, z_offset, chunk_size=10):
 
 # Generate terrain in chunks
 generate_chunk(0, 0, chunk_size=10)
-
+level_parent.texture = "grass.png"
 
 
 level_parent.collider = 'mesh'
